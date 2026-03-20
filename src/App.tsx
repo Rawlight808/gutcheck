@@ -18,7 +18,7 @@ export default function App() {
   }, [])
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/gutcheck">
       <div className="app">
         <div className="app__content">
           <Routes>
