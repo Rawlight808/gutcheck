@@ -1,0 +1,80 @@
+export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+export type FoodTag =
+  | 'dairy'
+  | 'gluten'
+  | 'sugar'
+  | 'fried'
+  | 'spicy'
+  | 'alcohol'
+  | 'caffeine'
+  | 'processed'
+  | 'raw'
+  | 'fermented'
+  | 'nuts'
+  | 'soy'
+  | 'eggs'
+  | 'red_meat'
+  | 'seafood'
+  | 'fruit'
+  | 'vegetables'
+
+export const FOOD_TAGS: { id: FoodTag; label: string; emoji: string }[] = [
+  { id: 'dairy', label: 'Dairy', emoji: '🧀' },
+  { id: 'gluten', label: 'Gluten', emoji: '🍞' },
+  { id: 'sugar', label: 'Sugar', emoji: '🍬' },
+  { id: 'fried', label: 'Fried', emoji: '🍟' },
+  { id: 'spicy', label: 'Spicy', emoji: '🌶️' },
+  { id: 'alcohol', label: 'Alcohol', emoji: '🍷' },
+  { id: 'caffeine', label: 'Caffeine', emoji: '☕' },
+  { id: 'processed', label: 'Processed', emoji: '📦' },
+  { id: 'raw', label: 'Raw', emoji: '🥗' },
+  { id: 'fermented', label: 'Fermented', emoji: '🫙' },
+  { id: 'nuts', label: 'Nuts', emoji: '🥜' },
+  { id: 'soy', label: 'Soy', emoji: '🫘' },
+  { id: 'eggs', label: 'Eggs', emoji: '🥚' },
+  { id: 'red_meat', label: 'Red Meat', emoji: '🥩' },
+  { id: 'seafood', label: 'Seafood', emoji: '🐟' },
+  { id: 'fruit', label: 'Fruit', emoji: '🍎' },
+  { id: 'vegetables', label: 'Vegetables', emoji: '🥦' },
+]
+
+export type FoodEntry = {
+  id: string
+  date: string        // YYYY-MM-DD
+  meal: MealSlot
+  description: string
+  tags: FoodTag[]
+  createdAt: string   // ISO timestamp
+}
+
+export type BowelRating = 1 | 2 | 3 | 4 | 5
+
+export type DailyCheckin = {
+  id: string
+  date: string        // YYYY-MM-DD
+  sleepQuality: number   // 1–5
+  energy: number         // 1–5
+  mood: number           // 1–5
+  pain: number           // 1–5 (1 = no pain, 5 = severe)
+  bowel: BowelRating     // 1 = bad, 5 = great
+  notes: string
+  createdAt: string
+}
+
+export type ReminderSettings = {
+  eveningReminderEnabled: boolean
+  eveningReminderTime: string // HH:MM
+  morningReminderEnabled: boolean
+  morningReminderTime: string
+}
+
+export type TriggerInsight = {
+  tag: FoodTag
+  label: string
+  symptom: string
+  score: number        // 0–1 confidence
+  occurrences: number
+  avgSymptomAfter: number
+  avgSymptomWithout: number
+}
