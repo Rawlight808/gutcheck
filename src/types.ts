@@ -3,6 +3,7 @@ export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 export type FoodTag =
   | 'dairy'
   | 'gluten'
+  | 'bread'
   | 'sugar'
   | 'fried'
   | 'spicy'
@@ -15,13 +16,19 @@ export type FoodTag =
   | 'soy'
   | 'eggs'
   | 'red_meat'
+  | 'chicken'
   | 'seafood'
   | 'fruit'
   | 'vegetables'
+  | 'organic'
+  | 'non_organic'
+  | 'seed_oil'
+  | 'supplements'
 
 export const FOOD_TAGS: { id: FoodTag; label: string; emoji: string }[] = [
   { id: 'dairy', label: 'Dairy', emoji: '🧀' },
   { id: 'gluten', label: 'Gluten', emoji: '🍞' },
+  { id: 'bread', label: 'Bread', emoji: '🥖' },
   { id: 'sugar', label: 'Sugar', emoji: '🍬' },
   { id: 'fried', label: 'Fried', emoji: '🍟' },
   { id: 'spicy', label: 'Spicy', emoji: '🌶️' },
@@ -34,9 +41,14 @@ export const FOOD_TAGS: { id: FoodTag; label: string; emoji: string }[] = [
   { id: 'soy', label: 'Soy', emoji: '🫘' },
   { id: 'eggs', label: 'Eggs', emoji: '🥚' },
   { id: 'red_meat', label: 'Red Meat', emoji: '🥩' },
+  { id: 'chicken', label: 'Chicken', emoji: '🍗' },
   { id: 'seafood', label: 'Seafood', emoji: '🐟' },
   { id: 'fruit', label: 'Fruit', emoji: '🍎' },
   { id: 'vegetables', label: 'Vegetables', emoji: '🥦' },
+  { id: 'organic', label: 'Organic', emoji: '🌿' },
+  { id: 'non_organic', label: 'Non-Organic', emoji: '🏭' },
+  { id: 'seed_oil', label: 'Seed Oil', emoji: '🫗' },
+  { id: 'supplements', label: 'Supplements', emoji: '💊' },
 ]
 
 export type FoodEntry = {
