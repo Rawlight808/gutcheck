@@ -20,7 +20,7 @@
   --clr-border: #e8e5df;
   --radius: 14px;
   --radius-sm: 10px;
-  --nav-height: 72px;
+  --nav-height: calc(72px + env(safe-area-inset-bottom, 0px));
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
