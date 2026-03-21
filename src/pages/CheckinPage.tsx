@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { v4 as uuid } from 'uuid'
-import { getCheckinForDate, saveCheckin } from '../store'
-import type { BowelRating } from '../types'
+import { cloudGetCheckinForDate, cloudSaveCheckin } from '../cloudStore'
+import type { BowelRating, DailyCheckin } from '../types'
 
 function RatingRow({ label, value, onChange, labels }: {
   label: string
@@ -38,20 +38,38 @@ function RatingRow({ label, value, onChange, labels }: {
 export function CheckinPage() {
   const navigate = useNavigate()
   const today = format(new Date(), 'yyyy-MM-dd')
-  const existing = useMemo(() => getCheckinForDate(today), [])
 
-  const [energy, setEnergy] = useState(existing?.energy ?? 0)
-  const [mood, setMood] = useState(existing?.mood ?? 0)
-  const [pain, setPain] = useState(existing?.pain ?? 0)
-  const [bowel, setBowel] = useState<number>(existing?.bowel ?? 0)
-  const [sleep, setSleep] = useState(existing?.sleepQuality ?? 0)
-  const [notes, setNotes] = useState(existing?.notes ?? '')
+  const [existing, setExisting] = useState<DailyCheckin | undefined>()
+  const [loaded, setLoaded] = useState(false)
+  const [energy, setEnergy] = useState(0)
+  const [mood, setMood] = useState(0)
+  const [pain, setPain] = useState(0)
+  const [bowel, setBowel] = useState(0)
+  const [sleep, setSleep] = useState(0)
+  const [notes, setNotes] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    cloudGetCheckinForDate(today).then((c) => {
+      if (c) {
+        setExisting(c)
+        setEnergy(c.energy)
+        setMood(c.mood)
+        setPain(c.pain)
+        setBowel(c.bowel)
+        setSleep(c.sleepQuality)
+        setNotes(c.notes)
+      }
+      setLoaded(true)
+    })
+  }, [today])
 
   const canSave = energy > 0 && mood > 0 && pain > 0 && bowel > 0 && sleep > 0
 
-  const handleSave = () => {
-    if (!canSave) return
-    saveCheckin({
+  const handleSave = async () => {
+    if (!canSave || saving) return
+    setSaving(true)
+    await cloudSaveCheckin({
       id: existing?.id ?? uuid(),
       date: today,
       sleepQuality: sleep,
@@ -62,7 +80,12 @@ export function CheckinPage() {
       notes: notes.trim(),
       createdAt: existing?.createdAt ?? new Date().toISOString(),
     })
+    setSaving(false)
     navigate('/')
+  }
+
+  if (!loaded) {
+    return <p style={{ textAlign: 'center', color: 'var(--clr-text-muted)', padding: '2rem' }}>Loading...</p>
   }
 
   return (
@@ -94,10 +117,10 @@ export function CheckinPage() {
         <button
           className="btn btn--primary btn--full"
           onClick={handleSave}
-          disabled={!canSave}
-          style={{ opacity: canSave ? 1 : 0.45 }}
+          disabled={!canSave || saving}
+          style={{ opacity: canSave && !saving ? 1 : 0.45 }}
         >
-          {existing ? 'Update Check-In' : 'Save Check-In'}
+          {saving ? 'Saving...' : existing ? 'Update Check-In' : 'Save Check-In'}
         </button>
       </div>
     </div>

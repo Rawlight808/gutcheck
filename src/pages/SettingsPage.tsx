@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getReminderSettings, saveReminderSettings } from '../store'
+import { useAuthContext } from '../App'
 
 function useNotificationStatus() {
   const [status, setStatus] = useState<NotificationPermission | 'unsupported'>(
@@ -9,6 +10,7 @@ function useNotificationStatus() {
 }
 
 export function SettingsPage() {
+  const { user, signOut } = useAuthContext()
   const [settings, setSettings] = useState(() => getReminderSettings())
   const [saved, setSaved] = useState(false)
   const { status: notifStatus, refresh: refreshNotif } = useNotificationStatus()
@@ -126,6 +128,16 @@ export function SettingsPage() {
           Settings saved ✓
         </p>
       )}
+
+      <div className="card">
+        <div className="card__label">Account</div>
+        <p style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', marginBottom: '0.6rem' }}>
+          {user?.email}
+        </p>
+        <button className="btn btn--ghost btn--full" style={{ color: 'var(--clr-red)' }} onClick={signOut}>
+          Sign Out
+        </button>
+      </div>
     </div>
   )
 }

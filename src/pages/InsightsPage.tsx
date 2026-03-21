@@ -1,12 +1,17 @@
-import { useMemo } from 'react'
-import { getFoodEntries, getCheckins } from '../store'
+import { useEffect, useState } from 'react'
+import { cloudGetFoodEntries, cloudGetCheckins } from '../cloudStore'
 import { detectTriggers } from '../insights'
+import type { TriggerInsight } from '../types'
 
 export function InsightsPage() {
-  const insights = useMemo(() => {
-    const foods = getFoodEntries()
-    const checkins = getCheckins()
-    return detectTriggers(foods, checkins)
+  const [insights, setInsights] = useState<TriggerInsight[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([cloudGetFoodEntries(), cloudGetCheckins()]).then(([foods, checkins]) => {
+      setInsights(detectTriggers(foods, checkins))
+      setLoading(false)
+    })
   }, [])
 
   return (
@@ -16,7 +21,9 @@ export function InsightsPage() {
         <p className="page-subtitle">Patterns between what you eat and how you feel</p>
       </div>
 
-      {insights.length === 0 ? (
+      {loading ? (
+        <p style={{ textAlign: 'center', color: 'var(--clr-text-muted)', padding: '2rem' }}>Analyzing...</p>
+      ) : insights.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state__icon">🔬</div>
           <p className="empty-state__text">

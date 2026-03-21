@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { v4 as uuid } from 'uuid'
-import { saveFoodEntry } from '../store'
+import { cloudSaveFoodEntry } from '../cloudStore'
 import { FOOD_TAGS } from '../types'
 import type { MealSlot, FoodTag } from '../types'
 
@@ -18,6 +18,7 @@ export function LogFoodPage() {
   const [meal, setMeal] = useState<MealSlot>('breakfast')
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState<Set<FoodTag>>(new Set())
+  const [saving, setSaving] = useState(false)
 
   const toggleTag = (tag: FoodTag) => {
     setTags((prev) => {
@@ -27,10 +28,11 @@ export function LogFoodPage() {
     })
   }
 
-  const handleSave = () => {
-    if (!description.trim()) return
+  const handleSave = async () => {
+    if (!description.trim() || saving) return
+    setSaving(true)
 
-    saveFoodEntry({
+    await cloudSaveFoodEntry({
       id: uuid(),
       date: format(new Date(), 'yyyy-MM-dd'),
       meal,
@@ -39,6 +41,7 @@ export function LogFoodPage() {
       createdAt: new Date().toISOString(),
     })
 
+    setSaving(false)
     setDescription('')
     setTags(new Set())
     navigate('/')
@@ -51,7 +54,6 @@ export function LogFoodPage() {
         <p className="page-subtitle">What did you eat?</p>
       </div>
 
-      {/* Meal selector */}
       <div className="meal-tabs">
         {MEALS.map((m) => (
           <button
@@ -64,7 +66,6 @@ export function LogFoodPage() {
         ))}
       </div>
 
-      {/* Description */}
       <div className="card">
         <div className="card__label">What did you eat?</div>
         <input
@@ -76,7 +77,6 @@ export function LogFoodPage() {
         />
       </div>
 
-      {/* Tags */}
       <div className="card">
         <div className="card__label">Food Tags</div>
         <div className="tag-grid">
@@ -92,15 +92,14 @@ export function LogFoodPage() {
         </div>
       </div>
 
-      {/* Save */}
       <div style={{ marginTop: '1rem' }}>
         <button
           className="btn btn--primary btn--full"
           onClick={handleSave}
-          disabled={!description.trim()}
-          style={{ opacity: description.trim() ? 1 : 0.45 }}
+          disabled={!description.trim() || saving}
+          style={{ opacity: description.trim() && !saving ? 1 : 0.45 }}
         >
-          Save Entry
+          {saving ? 'Saving...' : 'Save Entry'}
         </button>
       </div>
     </div>
