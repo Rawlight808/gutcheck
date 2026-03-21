@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { format } from 'date-fns'
+import { format, subDays } from 'date-fns'
 import { v4 as uuid } from 'uuid'
 import { cloudSaveFoodEntry } from '../cloudStore'
 import { FOOD_TAGS } from '../types'
@@ -13,12 +13,19 @@ const MEALS: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'snack', label: 'Snack', emoji: '🍿' },
 ]
 
+type DayOption = 'today' | 'yesterday'
+
 export function LogFoodPage() {
   const navigate = useNavigate()
+  const [day, setDay] = useState<DayOption>('today')
   const [meal, setMeal] = useState<MealSlot>('breakfast')
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState<Set<FoodTag>>(new Set())
   const [saving, setSaving] = useState(false)
+
+  const selectedDate = day === 'today'
+    ? format(new Date(), 'yyyy-MM-dd')
+    : format(subDays(new Date(), 1), 'yyyy-MM-dd')
 
   const toggleTag = (tag: FoodTag) => {
     setTags((prev) => {
@@ -34,7 +41,7 @@ export function LogFoodPage() {
 
     await cloudSaveFoodEntry({
       id: uuid(),
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: selectedDate,
       meal,
       description: description.trim(),
       tags: [...tags],
@@ -52,6 +59,21 @@ export function LogFoodPage() {
       <div className="page-header">
         <h1 className="page-title">Log Food</h1>
         <p className="page-subtitle">What did you eat?</p>
+      </div>
+
+      <div className="day-toggle">
+        <button
+          className={`day-toggle__btn ${day === 'today' ? 'day-toggle__btn--active' : ''}`}
+          onClick={() => setDay('today')}
+        >
+          Today
+        </button>
+        <button
+          className={`day-toggle__btn ${day === 'yesterday' ? 'day-toggle__btn--active' : ''}`}
+          onClick={() => setDay('yesterday')}
+        >
+          Yesterday
+        </button>
       </div>
 
       <div className="meal-tabs">
