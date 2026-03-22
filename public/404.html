@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Force HTTPS so Safari never shows "Not Secure" on http:// links/bookmarks -->
     <script>
       if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         location.replace('https://' + location.host + location.pathname + location.search + location.hash)
