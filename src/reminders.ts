@@ -19,6 +19,8 @@ function currentTimeHHMM(): string {
 }
 
 function notify(title: string, body: string) {
+  // Safari / some WebKit builds don't expose Notification — avoid ReferenceError
+  if (typeof Notification === 'undefined') return
   if (Notification.permission !== 'granted') return
 
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -33,6 +35,14 @@ function notify(title: string, body: string) {
 }
 
 function checkReminders() {
+  try {
+    runReminderCheck()
+  } catch (e) {
+    console.warn('ChewClue: reminder check skipped', e)
+  }
+}
+
+function runReminderCheck() {
   const settings = getReminderSettings()
   const now = currentTimeHHMM()
   const today = format(new Date(), 'yyyy-MM-dd')

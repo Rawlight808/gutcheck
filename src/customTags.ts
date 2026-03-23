@@ -12,7 +12,11 @@ export function getCustomTags(): TagDef[] {
 }
 
 export function saveCustomTags(tags: TagDef[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tags))
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tags))
+  } catch {
+    /* Safari private mode / storage blocked */
+  }
 }
 
 export function addCustomTag(label: string): TagDef {
