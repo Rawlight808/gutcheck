@@ -19,6 +19,7 @@ create table daily_checkins (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null default auth.uid(),
   date date not null,
+  period text not null default 'morning' check (period in ('morning', 'evening')),
   sleep_quality smallint not null check (sleep_quality between 1 and 5),
   energy smallint not null check (energy between 1 and 5),
   mood smallint not null check (mood between 1 and 5),
@@ -26,12 +27,21 @@ create table daily_checkins (
   bowel smallint not null check (bowel between 1 and 5),
   notes text not null default '',
   created_at timestamptz not null default now(),
-  unique (user_id, date)
+  unique (user_id, date, period)
 );
 
 -- Indexes for fast date lookups
 create index food_entries_user_date on food_entries (user_id, date);
-create index daily_checkins_user_date on daily_checkins (user_id, date);
+create index daily_checkins_user_date on daily_checkins (user_id, date, period);
+
+-- If you already created the table before this update, run this migration too:
+-- alter table daily_checkins add column if not exists period text not null default 'morning';
+-- alter table daily_checkins drop constraint if exists daily_checkins_user_id_date_key;
+-- alter table daily_checkins add constraint daily_checkins_user_date_period_key unique (user_id, date, period);
+-- drop index if exists daily_checkins_user_date;
+-- create index if not exists daily_checkins_user_date on daily_checkins (user_id, date, period);
+-- alter table daily_checkins drop constraint if exists daily_checkins_period_check;
+-- alter table daily_checkins add constraint daily_checkins_period_check check (period in ('morning', 'evening'));
 
 -- Row Level Security: each user only sees their own data
 alter table food_entries enable row level security;

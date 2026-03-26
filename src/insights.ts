@@ -22,10 +22,12 @@ export function detectTriggers(
   foods: FoodEntry[],
   checkins: DailyCheckin[],
 ): TriggerInsight[] {
-  if (checkins.length < 3) return []
+  const morningCheckins = checkins.filter((checkin) => checkin.period === 'morning')
+
+  if (morningCheckins.length < 3) return []
 
   const checkinMap = new Map<string, DailyCheckin>()
-  for (const c of checkins) checkinMap.set(c.date, c)
+  for (const c of morningCheckins) checkinMap.set(c.date, c)
 
   const foodsByDate = new Map<string, Set<FoodTag>>()
   for (const f of foods) {
@@ -50,7 +52,7 @@ export function detectTriggers(
       const withTag: number[] = []
       const withoutTag: number[] = []
 
-      for (const checkin of checkins) {
+      for (const checkin of morningCheckins) {
         const prevDay = format(subDays(parseISO(checkin.date), 1), 'yyyy-MM-dd')
         const prevTags = foodsByDate.get(prevDay)
         const val = checkin[symptom]

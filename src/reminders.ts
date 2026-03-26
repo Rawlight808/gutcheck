@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
-import { getReminderSettings, getFoodEntriesForDate, getCheckinForDate } from './store'
+import { getReminderSettings } from './store'
+import { cloudGetCheckinForDate } from './cloudStore'
 
 const LAST_EVENING_KEY = 'chewclue_last_evening_reminder'
 const LAST_MORNING_KEY = 'chewclue_last_morning_reminder'
@@ -49,14 +50,12 @@ function notify(title: string, body: string) {
 }
 
 function checkReminders() {
-  try {
-    runReminderCheck()
-  } catch (e) {
+  runReminderCheck().catch((e) => {
     console.warn('ChewClue: reminder check skipped', e)
-  }
+  })
 }
 
-function runReminderCheck() {
+async function runReminderCheck() {
   const settings = getReminderSettings()
   const now = currentTimeHHMM()
   const today = format(new Date(), 'yyyy-MM-dd')
@@ -66,11 +65,9 @@ function runReminderCheck() {
     now >= settings.eveningReminderTime &&
     !alreadySentToday(LAST_EVENING_KEY)
   ) {
-    const foods = getFoodEntriesForDate(today)
-    if (foods.length === 0) {
-      notify('ChewClue', "You haven't logged any food today. Tap to add what you ate.")
-    } else {
-      notify('ChewClue', 'Did you log everything you ate today? Tap to review.')
+    const checkin = await cloudGetCheckinForDate(today, 'evening')
+    if (!checkin) {
+      notify('ChewClue', 'How are you feeling tonight? Tap to do your evening check-in.')
     }
     markSent(LAST_EVENING_KEY)
   }
@@ -81,7 +78,7 @@ function runReminderCheck() {
     now < '12:00' &&
     !alreadySentToday(LAST_MORNING_KEY)
   ) {
-    const checkin = getCheckinForDate(today)
+    const checkin = await cloudGetCheckinForDate(today, 'morning')
     if (!checkin) {
       notify('ChewClue', 'Good morning! How are you feeling? Tap to do your check-in.')
     }

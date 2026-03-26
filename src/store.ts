@@ -1,4 +1,4 @@
-import type { DailyCheckin, FoodEntry, ReminderSettings } from './types'
+import type { CheckinPeriod, DailyCheckin, FoodEntry, ReminderSettings } from './types'
 
 const FOOD_KEY = 'chewclue_foods'
 const CHECKIN_KEY = 'chewclue_checkins'
@@ -50,7 +50,10 @@ export function deleteFoodEntry(id: string) {
 }
 
 export function getCheckins(): DailyCheckin[] {
-  return read<DailyCheckin[]>(CHECKIN_KEY, [])
+  return read<DailyCheckin[]>(CHECKIN_KEY, []).map((checkin) => ({
+    ...checkin,
+    period: checkin.period ?? 'morning',
+  }))
 }
 
 export function saveCheckin(checkin: DailyCheckin) {
@@ -62,7 +65,15 @@ export function saveCheckin(checkin: DailyCheckin) {
 }
 
 export function getCheckinForDate(date: string): DailyCheckin | undefined {
-  return getCheckins().find((c) => c.date === date)
+  return getCheckinForDateAndPeriod(date, 'morning')
+}
+
+export function getCheckinForDateAndPeriod(date: string, period: CheckinPeriod): DailyCheckin | undefined {
+  return getCheckins().find((c) => c.date === date && c.period === period)
+}
+
+export function getCheckinsForDate(date: string): DailyCheckin[] {
+  return getCheckins().filter((c) => c.date === date)
 }
 
 export function getFoodEntriesForDate(date: string): FoodEntry[] {

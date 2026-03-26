@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { v4 as uuid } from 'uuid'
 import { cloudGetCheckinForDate, cloudSaveCheckin } from '../cloudStore'
-import type { BowelRating, DailyCheckin } from '../types'
+import type { BowelRating, CheckinPeriod, DailyCheckin } from '../types'
 
 function RatingRow({ label, value, onChange, labels }: {
   label: string
@@ -37,7 +37,13 @@ function RatingRow({ label, value, onChange, labels }: {
 
 export function CheckinPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const today = format(new Date(), 'yyyy-MM-dd')
+  const selectedDate = searchParams.get('date') ?? today
+  const periodParam = searchParams.get('period')
+  const period: CheckinPeriod = periodParam === 'evening' ? 'evening' : 'morning'
+  const title = period === 'evening' ? 'Evening Check-In' : 'Morning Check-In'
+  const subtitle = period === 'evening' ? 'How are you feeling tonight?' : 'How are you feeling today?'
 
   const [existing, setExisting] = useState<DailyCheckin | undefined>()
   const [loaded, setLoaded] = useState(false)
@@ -50,7 +56,8 @@ export function CheckinPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    cloudGetCheckinForDate(today).then((c) => {
+    setLoaded(false)
+    cloudGetCheckinForDate(selectedDate, period).then((c) => {
       if (c) {
         setExisting(c)
         setEnergy(c.energy)
@@ -59,10 +66,18 @@ export function CheckinPage() {
         setBowel(c.bowel)
         setSleep(c.sleepQuality)
         setNotes(c.notes)
+      } else {
+        setExisting(undefined)
+        setEnergy(0)
+        setMood(0)
+        setPain(0)
+        setBowel(0)
+        setSleep(0)
+        setNotes('')
       }
       setLoaded(true)
     })
-  }, [today])
+  }, [selectedDate, period])
 
   const canSave = energy > 0 && mood > 0 && pain > 0 && bowel > 0 && sleep > 0
 
@@ -71,7 +86,8 @@ export function CheckinPage() {
     setSaving(true)
     await cloudSaveCheckin({
       id: existing?.id ?? uuid(),
-      date: today,
+      date: selectedDate,
+      period,
       sleepQuality: sleep,
       energy,
       mood,
@@ -81,7 +97,7 @@ export function CheckinPage() {
       createdAt: existing?.createdAt ?? new Date().toISOString(),
     })
     setSaving(false)
-    navigate('/')
+    navigate(`/?date=${selectedDate}`)
   }
 
   if (!loaded) {
@@ -91,8 +107,8 @@ export function CheckinPage() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Morning Check-In</h1>
-        <p className="page-subtitle">How are you feeling today?</p>
+        <h1 className="page-title">{title}</h1>
+        <p className="page-subtitle">{subtitle}</p>
       </div>
 
       <div className="card">

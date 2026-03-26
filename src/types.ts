@@ -45,9 +45,12 @@ export type FoodEntry = {
 
 export type BowelRating = 1 | 2 | 3 | 4 | 5
 
+export type CheckinPeriod = 'morning' | 'evening'
+
 export type DailyCheckin = {
   id: string
   date: string        // YYYY-MM-DD
+  period: CheckinPeriod
   sleepQuality: number   // 1–5
   energy: number         // 1–5
   mood: number           // 1–5

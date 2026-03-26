@@ -62,7 +62,7 @@ export function SettingsPage() {
       <div className="card">
         <div className="card__label">Evening Reminder</div>
         <p style={{ fontSize: '0.82rem', color: 'var(--clr-text-muted)', marginBottom: '0.6rem' }}>
-          Reminder to log what you ate today
+          Reminder to do your evening check-in
         </p>
 
         <div className="toggle-row">

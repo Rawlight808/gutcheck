@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { DailyCheckin, FoodEntry } from './types'
+import type { CheckinPeriod, DailyCheckin, FoodEntry } from './types'
 
 export async function cloudGetFoodEntries(): Promise<FoodEntry[]> {
   const { data, error } = await supabase
@@ -73,6 +73,7 @@ export async function cloudGetCheckins(): Promise<DailyCheckin[]> {
   return (data ?? []).map((r) => ({
     id: r.id,
     date: r.date,
+    period: r.period ?? 'morning',
     sleepQuality: r.sleep_quality,
     energy: r.energy,
     mood: r.mood,
@@ -83,26 +84,31 @@ export async function cloudGetCheckins(): Promise<DailyCheckin[]> {
   }))
 }
 
-export async function cloudGetCheckinForDate(date: string): Promise<DailyCheckin | undefined> {
+export async function cloudGetCheckinsForDate(date: string): Promise<DailyCheckin[]> {
   const { data, error } = await supabase
     .from('daily_checkins')
     .select('*')
     .eq('date', date)
-    .maybeSingle()
 
-  if (error || !data) return undefined
+  if (error) return []
 
-  return {
-    id: data.id,
-    date: data.date,
-    sleepQuality: data.sleep_quality,
-    energy: data.energy,
-    mood: data.mood,
-    pain: data.pain,
-    bowel: data.bowel,
-    notes: data.notes ?? '',
-    createdAt: data.created_at,
-  }
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    date: r.date,
+    period: r.period ?? 'morning',
+    sleepQuality: r.sleep_quality,
+    energy: r.energy,
+    mood: r.mood,
+    pain: r.pain,
+    bowel: r.bowel,
+    notes: r.notes ?? '',
+    createdAt: r.created_at,
+  }))
+}
+
+export async function cloudGetCheckinForDate(date: string, period: CheckinPeriod = 'morning'): Promise<DailyCheckin | undefined> {
+  const checkins = await cloudGetCheckinsForDate(date)
+  return checkins.find((checkin) => checkin.period === period)
 }
 
 export async function cloudSaveCheckin(checkin: DailyCheckin): Promise<void> {
@@ -111,6 +117,7 @@ export async function cloudSaveCheckin(checkin: DailyCheckin): Promise<void> {
     .upsert({
       id: checkin.id,
       date: checkin.date,
+      period: checkin.period,
       sleep_quality: checkin.sleepQuality,
       energy: checkin.energy,
       mood: checkin.mood,
