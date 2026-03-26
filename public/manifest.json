@@ -1,7 +1,7 @@
 {
   "name": "ChewClue",
   "short_name": "ChewClue",
-  "description": "Track food. Find triggers. Feel better.",
+  "description": "Track meals, find triggers, feel better.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8f6f2",
