@@ -3,11 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format, subDays, isValid, parseISO } from 'date-fns'
 import { DateHeaderWithCalendar } from '../components/DateHeaderWithCalendar'
 import { v4 as uuid } from 'uuid'
-import { cloudSaveFoodEntry, cloudGetFoodEntry } from '../cloudStore'
+import { cloudSaveFoodEntry, cloudGetFoodEntry, cloudGetFoodEntriesForDate, cloudDeleteFoodEntry } from '../cloudStore'
 import { BUILT_IN_TAGS } from '../types'
 import { getCustomTags, addCustomTag, removeCustomTag } from '../customTags'
 import { getAutoTags } from '../autoTags'
-import type { MealSlot, TagDef } from '../types'
+import type { FoodEntry, MealSlot, TagDef } from '../types'
 
 const MEALS: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -15,6 +15,14 @@ const MEALS: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'dinner', label: 'Dinner', emoji: '🌙' },
   { slot: 'snack', label: 'Snack', emoji: '🍿' },
 ]
+
+const TAG_ICON: Record<string, string> = {
+  dairy: '🧀',
+  gluten: '🍞',
+  sugar: '🍬',
+  spicy: '🌶️',
+  caffeine: '☕',
+}
 
 function resolveDate(param: string | null): string {
   if (param && isValid(parseISO(param))) return param
@@ -35,6 +43,8 @@ export function LogFoodPage() {
   const [tags, setTags] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
   const [loadingEntry, setLoadingEntry] = useState(isEdit)
+  const [dateEntries, setDateEntries] = useState<FoodEntry[]>([])
+  const [loadingDateEntries, setLoadingDateEntries] = useState(true)
   const [entryId, setEntryId] = useState<string>(() => editId ?? uuid())
   const [originalCreatedAt, setOriginalCreatedAt] = useState<string | null>(null)
   const [customTags, setCustomTags] = useState<TagDef[]>(() => getCustomTags())
@@ -49,6 +59,12 @@ export function LogFoodPage() {
   const isToday = selectedDate === todayStr
   const isYesterday = selectedDate === yesterdayStr
   const dateLabel = isToday ? 'Today' : isYesterday ? 'Yesterday' : format(new Date(selectedDate + 'T12:00:00'), 'EEE, MMM d')
+
+  const refreshDateEntries = useCallback(async () => {
+    setLoadingDateEntries(true)
+    setDateEntries(await cloudGetFoodEntriesForDate(selectedDate))
+    setLoadingDateEntries(false)
+  }, [selectedDate])
 
   const loadEntry = useCallback(async () => {
     if (!editId) return
@@ -66,6 +82,7 @@ export function LogFoodPage() {
   }, [editId])
 
   useEffect(() => { loadEntry() }, [loadEntry])
+  useEffect(() => { refreshDateEntries() }, [refreshDateEntries])
 
   useEffect(() => {
     if (editId) return
@@ -148,13 +165,25 @@ export function LogFoodPage() {
     })
 
     setSaving(false)
+    await refreshDateEntries()
 
     const returnDate = selectedDate === todayStr ? '' : `?date=${selectedDate}`
     navigate(`/${returnDate}`)
   }
 
   const setDayShortcut = (target: 'today' | 'yesterday') => {
-    setSelectedDate(target === 'today' ? todayStr : yesterdayStr)
+    changeLogDate(target === 'today' ? todayStr : yesterdayStr)
+  }
+
+  const handleDeleteEntry = async (id: string) => {
+    await cloudDeleteFoodEntry(id)
+
+    if (id === entryId) {
+      navigate(selectedDate === todayStr ? '/log' : `/log?date=${selectedDate}`)
+      return
+    }
+
+    setDateEntries((current) => current.filter((entry) => entry.id !== id))
   }
 
   if (loadingEntry) {
@@ -173,6 +202,38 @@ export function LogFoodPage() {
         onDateChange={changeLogDate}
         todayHint="Choose another day to log or edit meals."
       />
+
+      <div className="card" style={{ marginBottom: '0.75rem' }}>
+        <div className="card__label">Meals For {dateLabel}</div>
+        {loadingDateEntries ? (
+          <p style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>Loading meals...</p>
+        ) : dateEntries.length === 0 ? (
+          <p style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>No meals logged for this date yet.</p>
+        ) : (
+          <div className="meal-items">
+            {dateEntries.map((entry) => (
+              <div key={entry.id} className="meal-item">
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.78rem', color: 'var(--clr-text-muted)', marginBottom: '0.1rem' }}>
+                    {MEALS.find((mealOption) => mealOption.slot === entry.meal)?.label ?? entry.meal}
+                    {entry.id === entryId ? ' · Editing' : ''}
+                  </div>
+                  <span>{entry.description}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+                  <span className="meal-item__tags">
+                    {entry.tags.slice(0, 3).map((tag) => (
+                      <span key={tag} title={tag}>{TAG_ICON[tag] ?? '🏷️'}</span>
+                    ))}
+                  </span>
+                  <button className="meal-item__edit" onClick={() => navigate(`/log?date=${selectedDate}&edit=${entry.id}`)}>✎</button>
+                  <button className="meal-item__delete" onClick={() => handleDeleteEntry(entry.id)}>✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {!isEdit && (isToday || isYesterday) && (
         <div className="day-toggle">
