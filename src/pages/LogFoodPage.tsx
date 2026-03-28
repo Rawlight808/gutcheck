@@ -166,9 +166,18 @@ export function LogFoodPage() {
 
     setSaving(false)
     await refreshDateEntries()
+    if (isEdit) {
+      const returnDate = selectedDate === todayStr ? '' : `?date=${selectedDate}`
+      navigate(`/${returnDate}`)
+      return
+    }
 
-    const returnDate = selectedDate === todayStr ? '' : `?date=${selectedDate}`
-    navigate(`/${returnDate}`)
+    // Stay on Log Food for rapid multi-entry logging.
+    setDescription('')
+    setTags(new Set())
+    setAutoApplied(false)
+    setEntryId(uuid())
+    setOriginalCreatedAt(null)
   }
 
   const setDayShortcut = (target: 'today' | 'yesterday') => {
