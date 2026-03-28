@@ -38,6 +38,25 @@ export async function cloudGetFoodEntriesForDate(date: string): Promise<FoodEntr
   }))
 }
 
+export async function cloudGetFoodEntry(id: string): Promise<FoodEntry | null> {
+  const { data, error } = await supabase
+    .from('food_entries')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (error || !data) { if (error) console.error(error); return null }
+
+  return {
+    id: data.id,
+    date: data.date,
+    meal: data.meal,
+    description: data.description,
+    tags: data.tags ?? [],
+    createdAt: data.created_at,
+  }
+}
+
 export async function cloudSaveFoodEntry(entry: FoodEntry): Promise<void> {
   const { error } = await supabase
     .from('food_entries')

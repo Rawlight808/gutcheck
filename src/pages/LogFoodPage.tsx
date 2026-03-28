@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { format, subDays } from 'date-fns'
+import { format, subDays, isValid, parseISO } from 'date-fns'
 import { v4 as uuid } from 'uuid'
-import { cloudSaveFoodEntry } from '../cloudStore'
+import { cloudSaveFoodEntry, cloudGetFoodEntry } from '../cloudStore'
 import { BUILT_IN_TAGS } from '../types'
 import { getCustomTags, addCustomTag, removeCustomTag } from '../customTags'
 import { getAutoTags } from '../autoTags'
@@ -15,23 +15,27 @@ const MEALS: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'snack', label: 'Snack', emoji: '🍿' },
 ]
 
-type DayOption = 'today' | 'yesterday'
+function resolveDate(param: string | null): string {
+  if (param && isValid(parseISO(param))) return param
+  return format(new Date(), 'yyyy-MM-dd')
+}
 
 export function LogFoodPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const [day, setDay] = useState<DayOption>(() => {
-    const dateParam = searchParams.get('date')
-    if (dateParam && dateParam === format(subDays(new Date(), 1), 'yyyy-MM-dd')) {
-      return 'yesterday'
-    }
-    return 'today'
-  })
+  const dateParam = searchParams.get('date')
+  const editId = searchParams.get('edit')
+  const isEdit = !!editId
+
+  const [selectedDate, setSelectedDate] = useState(() => resolveDate(dateParam))
   const [meal, setMeal] = useState<MealSlot>('breakfast')
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
+  const [loadingEntry, setLoadingEntry] = useState(isEdit)
+  const [entryId, setEntryId] = useState<string>(() => editId ?? uuid())
+  const [originalCreatedAt, setOriginalCreatedAt] = useState<string | null>(null)
   const [customTags, setCustomTags] = useState<TagDef[]>(() => getCustomTags())
   const [showAddTag, setShowAddTag] = useState(false)
   const [newTagName, setNewTagName] = useState('')
@@ -39,12 +43,31 @@ export function LogFoodPage() {
 
   const allTags = useMemo(() => [...BUILT_IN_TAGS, ...customTags], [customTags])
 
-  const selectedDate = day === 'today'
-    ? format(new Date(), 'yyyy-MM-dd')
-    : format(subDays(new Date(), 1), 'yyyy-MM-dd')
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd')
+  const isToday = selectedDate === todayStr
+  const isYesterday = selectedDate === yesterdayStr
+  const dateLabel = isToday ? 'Today' : isYesterday ? 'Yesterday' : format(new Date(selectedDate + 'T12:00:00'), 'EEE, MMM d')
 
-  // Suggest tags from description (adds only; never clears — user removes tags explicitly)
+  const loadEntry = useCallback(async () => {
+    if (!editId) return
+    setLoadingEntry(true)
+    const entry = await cloudGetFoodEntry(editId)
+    if (entry) {
+      setEntryId(entry.id)
+      setSelectedDate(entry.date)
+      setMeal(entry.meal)
+      setDescription(entry.description)
+      setTags(new Set(entry.tags))
+      setOriginalCreatedAt(entry.createdAt)
+    }
+    setLoadingEntry(false)
+  }, [editId])
+
+  useEffect(() => { loadEntry() }, [loadEntry])
+
   useEffect(() => {
+    if (loadingEntry) return
     if (!description.trim()) {
       setAutoApplied(false)
       return
@@ -61,7 +84,7 @@ export function LogFoodPage() {
     } else {
       setAutoApplied(false)
     }
-  }, [description])
+  }, [description, loadingEntry])
 
   const toggleTag = (tag: string) => {
     setTags((prev) => {
@@ -101,42 +124,57 @@ export function LogFoodPage() {
     setSaving(true)
 
     await cloudSaveFoodEntry({
-      id: uuid(),
+      id: entryId,
       date: selectedDate,
       meal,
       description: description.trim(),
       tags: [...tags],
-      createdAt: new Date().toISOString(),
+      createdAt: originalCreatedAt ?? new Date().toISOString(),
     })
 
     setSaving(false)
-    setDescription('')
-    setTags(new Set())
-    setAutoApplied(false)
-    navigate('/')
+
+    const returnDate = selectedDate === todayStr ? '' : `?date=${selectedDate}`
+    navigate(`/${returnDate}`)
+  }
+
+  const setDayShortcut = (target: 'today' | 'yesterday') => {
+    setSelectedDate(target === 'today' ? todayStr : yesterdayStr)
+  }
+
+  if (loadingEntry) {
+    return <p style={{ textAlign: 'center', color: 'var(--clr-text-muted)', padding: '2rem' }}>Loading...</p>
   }
 
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Log Food</h1>
-        <p className="page-subtitle">What did you eat?</p>
+        <h1 className="page-title">{isEdit ? 'Edit Entry' : 'Log Food'}</h1>
+        <p className="page-subtitle">{isEdit ? `Editing for ${dateLabel}` : 'What did you eat?'}</p>
       </div>
 
-      <div className="day-toggle">
-        <button
-          className={`day-toggle__btn ${day === 'today' ? 'day-toggle__btn--active' : ''}`}
-          onClick={() => setDay('today')}
-        >
-          Today
-        </button>
-        <button
-          className={`day-toggle__btn ${day === 'yesterday' ? 'day-toggle__btn--active' : ''}`}
-          onClick={() => setDay('yesterday')}
-        >
-          Yesterday
-        </button>
-      </div>
+      {!isEdit && (isToday || isYesterday) && (
+        <div className="day-toggle">
+          <button
+            className={`day-toggle__btn ${isToday ? 'day-toggle__btn--active' : ''}`}
+            onClick={() => setDayShortcut('today')}
+          >
+            Today
+          </button>
+          <button
+            className={`day-toggle__btn ${isYesterday ? 'day-toggle__btn--active' : ''}`}
+            onClick={() => setDayShortcut('yesterday')}
+          >
+            Yesterday
+          </button>
+        </div>
+      )}
+
+      {!isEdit && !isToday && !isYesterday && (
+        <div style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--clr-text-muted)' }}>
+          Logging for <strong style={{ color: 'var(--clr-text)' }}>{dateLabel}</strong>
+        </div>
+      )}
 
       <div className="meal-tabs">
         {MEALS.map((m) => (
@@ -228,7 +266,7 @@ export function LogFoodPage() {
           disabled={!description.trim() || saving}
           style={{ opacity: description.trim() && !saving ? 1 : 0.45 }}
         >
-          {saving ? 'Saving...' : 'Save Entry'}
+          {saving ? 'Saving...' : isEdit ? 'Update Entry' : 'Save Entry'}
         </button>
       </div>
     </div>
