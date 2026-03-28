@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format, subDays, isValid, parseISO } from 'date-fns'
+import { DateHeaderWithCalendar } from '../components/DateHeaderWithCalendar'
 import { v4 as uuid } from 'uuid'
 import { cloudSaveFoodEntry, cloudGetFoodEntry } from '../cloudStore'
 import { BUILT_IN_TAGS } from '../types'
@@ -22,7 +23,7 @@ function resolveDate(param: string | null): string {
 
 export function LogFoodPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const dateParam = searchParams.get('date')
   const editId = searchParams.get('edit')
@@ -65,6 +66,20 @@ export function LogFoodPage() {
   }, [editId])
 
   useEffect(() => { loadEntry() }, [loadEntry])
+
+  useEffect(() => {
+    if (editId) return
+    setSelectedDate(resolveDate(dateParam))
+  }, [dateParam, editId])
+
+  const changeLogDate = (next: string) => {
+    setSelectedDate(next)
+    setSearchParams((prev) => {
+      const n = new URLSearchParams(prev)
+      n.set('date', next)
+      return n
+    })
+  }
 
   useEffect(() => {
     if (loadingEntry) return
@@ -150,8 +165,14 @@ export function LogFoodPage() {
     <div>
       <div className="page-header">
         <h1 className="page-title">{isEdit ? 'Edit Entry' : 'Log Food'}</h1>
-        <p className="page-subtitle">{isEdit ? `Editing for ${dateLabel}` : 'What did you eat?'}</p>
+        <p className="page-subtitle">{isEdit ? 'Update meal, tags, or date below.' : 'What did you eat?'}</p>
       </div>
+
+      <DateHeaderWithCalendar
+        selected={selectedDate}
+        onDateChange={changeLogDate}
+        todayHint="Choose another day to log or edit meals."
+      />
 
       {!isEdit && (isToday || isYesterday) && (
         <div className="day-toggle">

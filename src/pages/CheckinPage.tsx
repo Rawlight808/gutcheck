@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { format } from 'date-fns'
+import { format, isValid, parseISO } from 'date-fns'
+import { DateHeaderWithCalendar } from '../components/DateHeaderWithCalendar'
 import { v4 as uuid } from 'uuid'
 import { cloudGetCheckinForDate, cloudSaveCheckin } from '../cloudStore'
 import {
@@ -55,6 +56,11 @@ function metricValue(metrics: EditableMetric[], id: BuiltInCheckinMetricKey): nu
   return metrics.find((metric) => metric.id === id)?.value ?? 0
 }
 
+function resolveDateParam(param: string | null): string {
+  if (param && isValid(parseISO(param))) return param
+  return format(new Date(), 'yyyy-MM-dd')
+}
+
 function buildEditableMetrics(checkin?: DailyCheckin): EditableMetric[] {
   if (checkin) {
     return getCheckinMetricDisplay(checkin).map((metric) => ({
@@ -71,9 +77,9 @@ function buildEditableMetrics(checkin?: DailyCheckin): EditableMetric[] {
 
 export function CheckinPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const today = format(new Date(), 'yyyy-MM-dd')
-  const selectedDate = searchParams.get('date') ?? today
+  const selectedDate = resolveDateParam(searchParams.get('date'))
   const periodParam = searchParams.get('period')
   const period: CheckinPeriod = periodParam === 'evening' ? 'evening' : 'morning'
   const title = period === 'evening' ? 'Evening Check-In' : 'Morning Check-In'
@@ -175,7 +181,17 @@ export function CheckinPage() {
       createdAt: existing?.createdAt ?? new Date().toISOString(),
     })
     setSaving(false)
-    navigate(`/?date=${selectedDate}`)
+    navigate(selectedDate === today ? '/' : `/?date=${selectedDate}`)
+  }
+
+  const changeCheckinDate = (next: string) => {
+    setSearchParams((prev) => {
+      const n = new URLSearchParams(prev)
+      n.set('date', next)
+      const p = prev.get('period') === 'evening' ? 'evening' : 'morning'
+      n.set('period', p)
+      return n
+    })
   }
 
   if (!loaded) {
@@ -188,6 +204,12 @@ export function CheckinPage() {
         <h1 className="page-title">{title}</h1>
         <p className="page-subtitle">{subtitle}</p>
       </div>
+
+      <DateHeaderWithCalendar
+        selected={selectedDate}
+        onDateChange={changeCheckinDate}
+        todayHint="Go back to any day to add or adjust this check-in."
+      />
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>

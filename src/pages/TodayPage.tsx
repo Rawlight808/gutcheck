@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { format, addDays, subDays } from 'date-fns'
+import { format } from 'date-fns'
 import { cloudGetFoodEntriesForDate, cloudGetCheckinsForDate, cloudDeleteFoodEntry } from '../cloudStore'
 import type { CheckinPeriod, FoodEntry, DailyCheckin, MealSlot } from '../types'
 import { getCheckinMetricDisplay } from '../checkinCategories'
-import { CalendarPicker } from '../components/CalendarPicker'
+import { DateHeaderWithCalendar } from '../components/DateHeaderWithCalendar'
 
 const MEAL_ORDER: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -33,7 +33,6 @@ export function TodayPage() {
   const [foods, setFoods] = useState<FoodEntry[]>([])
   const [checkins, setCheckins] = useState<DailyCheckin[]>([])
   const [loading, setLoading] = useState(true)
-  const isToday = date === todayString
 
   const updateDate = (nextDate: string) => {
     setDate(nextDate)
@@ -55,8 +54,6 @@ export function TodayPage() {
 
   const getCheckin = (period: CheckinPeriod) => checkins.find((checkin) => checkin.period === period)
 
-  const [showCal, setShowCal] = useState(false)
-
   const handleDelete = async (id: string) => {
     await cloudDeleteFoodEntry(id)
     setFoods((prev) => prev.filter((f) => f.id !== id))
@@ -64,37 +61,13 @@ export function TodayPage() {
 
   return (
     <div>
-      {showCal && (
-        <CalendarPicker
-          selected={date}
-          onSelect={updateDate}
-          onClose={() => setShowCal(false)}
-        />
-      )}
-
       <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <button className="btn btn--ghost" style={{ padding: '0.4rem' }} onClick={() => updateDate(format(subDays(new Date(date + 'T12:00:00'), 1), 'yyyy-MM-dd'))}>
-            ←
-          </button>
-          <button className="date-label-btn" onClick={() => setShowCal(true)}>
-            <h1 className="page-title">{isToday ? 'Today' : format(new Date(date + 'T12:00:00'), 'EEE, MMM d')}</h1>
-            <p className="page-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              {isToday
-                ? 'Track meals, find triggers, feel better.'
-                : format(new Date(date + 'T12:00:00'), 'EEEE, MMMM d, yyyy')}
-              <span style={{ fontSize: '0.72rem', color: 'var(--clr-accent)' }}>&#x1F4C5;</span>
-            </p>
-          </button>
-          <button
-            className="btn btn--ghost"
-            style={{ padding: '0.4rem', opacity: isToday ? 0.3 : 1 }}
-            onClick={() => { if (!isToday) updateDate(format(addDays(new Date(date + 'T12:00:00'), 1), 'yyyy-MM-dd')) }}
-            disabled={isToday}
-          >
-            →
-          </button>
-        </div>
+        <DateHeaderWithCalendar
+          variant="page"
+          selected={date}
+          onDateChange={updateDate}
+          todayHint="Track meals, find triggers, feel better."
+        />
       </div>
 
       {loading ? (
