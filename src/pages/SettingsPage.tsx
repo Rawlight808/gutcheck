@@ -12,10 +12,13 @@ function useNotificationStatus() {
   return { status, refresh: () => setStatus('Notification' in window ? Notification.permission : 'unsupported') }
 }
 
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+const isStandalone = ('standalone' in navigator && (navigator as Record<string, unknown>).standalone === true)
+  || window.matchMedia('(display-mode: standalone)').matches
+
 export function SettingsPage() {
   const { user, signOut } = useAuthContext()
   const [settings, setSettings] = useState(() => getReminderSettings())
-  const [saved, setSaved] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [resetNotice, setResetNotice] = useState<string | null>(null)
   const { status: notifStatus, refresh: refreshNotif } = useNotificationStatus()
@@ -24,8 +27,6 @@ export function SettingsPage() {
     const next = { ...settings, ...patch }
     setSettings(next)
     saveReminderSettings(next)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1500)
   }
 
   const requestNotificationPermission = async () => {
@@ -70,108 +71,133 @@ export function SettingsPage() {
         <p className="page-subtitle">Reminders & preferences</p>
       </div>
 
-      <div className="card">
-        <div className="card__label">Notifications</div>
-        {notifStatus === 'granted' ? (
-          <p style={{ fontSize: '0.85rem', color: 'var(--clr-green)', fontWeight: 600 }}>
-            ✓ Notifications enabled
+      {isIOS && !isStandalone && (
+        <div className="card" style={{ background: 'var(--clr-accent-light)', borderColor: 'var(--clr-accent)' }}>
+          <div className="card__label" style={{ color: 'var(--clr-accent)' }}>Install ChewClue</div>
+          <p style={{ fontSize: '0.85rem', lineHeight: 1.5, color: 'var(--clr-text)' }}>
+            For the best experience, add ChewClue to your Home Screen:
           </p>
-        ) : notifStatus === 'denied' ? (
-          <p style={{ fontSize: '0.85rem', color: 'var(--clr-red)' }}>
-            Notifications blocked. Please enable them in your browser settings.
+          <ol style={{ fontSize: '0.82rem', color: 'var(--clr-text)', paddingLeft: '1.2rem', marginTop: '0.4rem', lineHeight: 1.6 }}>
+            <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+            <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
+            <li>Tap <strong>Add</strong></li>
+          </ol>
+          <p style={{ fontSize: '0.78rem', color: 'var(--clr-text-muted)', marginTop: '0.5rem' }}>
+            This makes ChewClue open full-screen like a real app.
           </p>
-        ) : (
-          <button className="btn btn--ghost btn--full" onClick={requestNotificationPermission}>
-            Enable Notifications
-          </button>
-        )}
-      </div>
-
-      <div className="card">
-        <div className="card__label">Evening Reminder</div>
-        <p style={{ fontSize: '0.82rem', color: 'var(--clr-text-muted)', marginBottom: '0.6rem' }}>
-          Reminder to do your evening check-in
-        </p>
-
-        <div className="toggle-row">
-          <span className="toggle-label">Enabled</span>
-          <button
-            className={`toggle ${settings.eveningReminderEnabled ? 'toggle--on' : ''}`}
-            onClick={() => update({ eveningReminderEnabled: !settings.eveningReminderEnabled })}
-          >
-            <div className="toggle__thumb" />
-          </button>
         </div>
-
-        {settings.eveningReminderEnabled && (
-          <div style={{ marginTop: '0.4rem' }}>
-            <label style={{ fontSize: '0.82rem', color: 'var(--clr-text-muted)' }}>
-              Time
-              <input
-                type="time"
-                className="input"
-                style={{ marginTop: '0.25rem' }}
-                value={settings.eveningReminderTime}
-                onChange={(e) => update({ eveningReminderTime: e.target.value })}
-              />
-            </label>
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <div className="card__label">Morning Reminder</div>
-        <p style={{ fontSize: '0.82rem', color: 'var(--clr-text-muted)', marginBottom: '0.6rem' }}>
-          Reminder to do your morning check-in
-        </p>
-
-        <div className="toggle-row">
-          <span className="toggle-label">Enabled</span>
-          <button
-            className={`toggle ${settings.morningReminderEnabled ? 'toggle--on' : ''}`}
-            onClick={() => update({ morningReminderEnabled: !settings.morningReminderEnabled })}
-          >
-            <div className="toggle__thumb" />
-          </button>
-        </div>
-
-        {settings.morningReminderEnabled && (
-          <div style={{ marginTop: '0.4rem' }}>
-            <label style={{ fontSize: '0.82rem', color: 'var(--clr-text-muted)' }}>
-              Time
-              <input
-                type="time"
-                className="input"
-                style={{ marginTop: '0.25rem' }}
-                value={settings.morningReminderTime}
-                onChange={(e) => update({ morningReminderTime: e.target.value })}
-              />
-            </label>
-          </div>
-        )}
-      </div>
-
-      {saved && (
-        <p style={{ textAlign: 'center', color: 'var(--clr-green)', fontWeight: 600, marginTop: '0.75rem', fontSize: '0.85rem' }}>
-          Settings saved ✓
-        </p>
       )}
 
       <div className="card">
+        <div className="card__label">Daily Reminders</div>
+
+        {notifStatus === 'granted' ? (
+          <p style={{ fontSize: '0.82rem', color: 'var(--clr-green)', fontWeight: 600, marginBottom: '0.75rem' }}>
+            Notifications enabled
+          </p>
+        ) : notifStatus === 'denied' ? (
+          <div style={{ marginBottom: '0.75rem' }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--clr-red)', marginBottom: '0.25rem' }}>
+              Notifications are blocked.
+            </p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--clr-text-muted)' }}>
+              {isIOS
+                ? 'Open iPhone Settings → Safari → Notifications to re-enable.'
+                : 'Check your browser notification settings to re-enable.'}
+            </p>
+          </div>
+        ) : (
+          <div style={{ marginBottom: '0.75rem' }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--clr-text-muted)', marginBottom: '0.5rem' }}>
+              Get gentle reminders to log your morning and evening check-ins.
+            </p>
+            <button className="btn btn--primary btn--full" onClick={requestNotificationPermission}>
+              Enable Reminders
+            </button>
+          </div>
+        )}
+
+        <div style={{ borderTop: '1px solid var(--clr-border)', paddingTop: '0.75rem' }}>
+          <div className="toggle-row">
+            <div>
+              <span className="toggle-label">Morning</span>
+              {settings.morningReminderEnabled && (
+                <span style={{ fontSize: '0.78rem', color: 'var(--clr-text-muted)', marginLeft: '0.5rem' }}>
+                  {settings.morningReminderTime}
+                </span>
+              )}
+            </div>
+            <button
+              className={`toggle ${settings.morningReminderEnabled ? 'toggle--on' : ''}`}
+              onClick={() => update({ morningReminderEnabled: !settings.morningReminderEnabled })}
+            >
+              <div className="toggle__thumb" />
+            </button>
+          </div>
+
+          {settings.morningReminderEnabled && (
+            <div style={{ marginBottom: '0.5rem' }}>
+              <input
+                type="time"
+                className="input"
+                value={settings.morningReminderTime}
+                onChange={(e) => update({ morningReminderTime: e.target.value })}
+              />
+            </div>
+          )}
+
+          <div className="toggle-row">
+            <div>
+              <span className="toggle-label">Evening</span>
+              {settings.eveningReminderEnabled && (
+                <span style={{ fontSize: '0.78rem', color: 'var(--clr-text-muted)', marginLeft: '0.5rem' }}>
+                  {settings.eveningReminderTime}
+                </span>
+              )}
+            </div>
+            <button
+              className={`toggle ${settings.eveningReminderEnabled ? 'toggle--on' : ''}`}
+              onClick={() => update({ eveningReminderEnabled: !settings.eveningReminderEnabled })}
+            >
+              <div className="toggle__thumb" />
+            </button>
+          </div>
+
+          {settings.eveningReminderEnabled && (
+            <div>
+              <input
+                type="time"
+                className="input"
+                value={settings.eveningReminderTime}
+                onChange={(e) => update({ eveningReminderTime: e.target.value })}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card">
         <div className="card__label">Account</div>
-        <p style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', marginBottom: '0.6rem' }}>
+        <p style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', marginBottom: '0.75rem' }}>
           {user?.email}
+        </p>
+        <button className="btn btn--ghost btn--full" onClick={signOut}>
+          Sign Out
+        </button>
+      </div>
+
+      <div className="card" style={{ borderColor: 'var(--clr-red)', borderStyle: 'dashed' }}>
+        <div className="card__label" style={{ color: 'var(--clr-red)' }}>Danger Zone</div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--clr-text-muted)', marginBottom: '0.6rem' }}>
+          Permanently delete all your meals, check-ins, and preferences.
         </p>
         <button
           className="btn btn--ghost btn--full"
-          style={{ color: 'var(--clr-red)', marginBottom: '0.5rem' }}
+          style={{ color: 'var(--clr-red)', background: 'rgba(239, 68, 68, 0.08)' }}
           onClick={handleReset}
           disabled={resetting}
         >
           {resetting ? 'Resetting...' : 'Start Over (Reset All Data)'}
-        </button>
-        <button className="btn btn--ghost btn--full" style={{ color: 'var(--clr-red)' }} onClick={signOut}>
-          Sign Out
         </button>
         {resetNotice && (
           <p

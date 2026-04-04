@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format, subDays, isValid, parseISO } from 'date-fns'
 import { DateHeaderWithCalendar } from '../components/DateHeaderWithCalendar'
@@ -8,6 +8,19 @@ import { BUILT_IN_TAGS } from '../types'
 import { getCustomTags, addCustomTag, removeCustomTag } from '../customTags'
 import { getAutoTags } from '../autoTags'
 import type { FoodEntry, MealSlot, TagDef } from '../types'
+
+function useToast() {
+  const [msg, setMsg] = useState('')
+  const [visible, setVisible] = useState(false)
+  const timer = useRef<number>(0)
+  const show = (text: string, ms = 2000) => {
+    clearTimeout(timer.current)
+    setMsg(text)
+    setVisible(true)
+    timer.current = window.setTimeout(() => setVisible(false), ms)
+  }
+  return { msg, visible, show }
+}
 
 const MEALS: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -51,6 +64,8 @@ export function LogFoodPage() {
   const [showAddTag, setShowAddTag] = useState(false)
   const [newTagName, setNewTagName] = useState('')
   const [autoApplied, setAutoApplied] = useState(false)
+  const toast = useToast()
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const allTags = useMemo(() => [...BUILT_IN_TAGS, ...customTags], [customTags])
 
@@ -172,12 +187,14 @@ export function LogFoodPage() {
       return
     }
 
-    // Stay on Log Food for rapid multi-entry logging.
+    const savedMealLabel = MEALS.find((m) => m.slot === meal)?.label ?? 'Entry'
+    toast.show(`${savedMealLabel} saved`)
     setDescription('')
-    setTags(new Set())
+    setTags(new Set([...tags].filter((tagId) => tagId.startsWith('custom_'))))
     setAutoApplied(false)
     setEntryId(uuid())
     setOriginalCreatedAt(null)
+    inputRef.current?.focus()
   }
 
   const setDayShortcut = (target: 'today' | 'yesterday') => {
@@ -282,10 +299,12 @@ export function LogFoodPage() {
       <div className="card">
         <div className="card__label">What did you eat?</div>
         <input
+          ref={inputRef}
           className="input"
           placeholder="e.g. Eggs, toast with butter, coffee"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && description.trim()) handleSave() }}
           autoFocus
         />
         {autoApplied && tags.size > 0 && (
@@ -350,7 +369,9 @@ export function LogFoodPage() {
         </div>
       </div>
 
-      <div style={{ marginTop: '1rem' }}>
+      <div style={{ height: '5rem' }} />
+
+      <div className="sticky-save">
         <button
           className="btn btn--primary btn--full"
           onClick={handleSave}
@@ -359,6 +380,10 @@ export function LogFoodPage() {
         >
           {saving ? 'Saving...' : isEdit ? 'Update Entry' : 'Save Entry'}
         </button>
+      </div>
+
+      <div className={`toast toast--success ${toast.visible ? 'toast--visible' : ''}`}>
+        {toast.msg}
       </div>
     </div>
   )

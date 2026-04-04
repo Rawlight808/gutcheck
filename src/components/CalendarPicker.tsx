@@ -22,7 +22,10 @@ type Props = {
 export function CalendarPicker({ selected, onSelect, onClose }: Props) {
   const selectedDate = new Date(selected + 'T12:00:00')
   const today = new Date()
+  const todayStr = format(today, 'yyyy-MM-dd')
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(selectedDate))
+  const isViewingCurrentMonth = isSameMonth(viewMonth, today)
+  const isSelectedToday = selected === todayStr
 
   const weeks = useMemo(() => {
     const start = startOfWeek(startOfMonth(viewMonth), { weekStartsOn: 0 })
@@ -40,6 +43,11 @@ export function CalendarPicker({ selected, onSelect, onClose }: Props) {
     return rows
   }, [viewMonth])
 
+  const jumpToToday = () => {
+    onSelect(todayStr)
+    onClose()
+  }
+
   return (
     <div className="cal-overlay" onClick={onClose}>
       <div className="cal" onClick={(e) => e.stopPropagation()}>
@@ -51,8 +59,8 @@ export function CalendarPicker({ selected, onSelect, onClose }: Props) {
           <button
             className="cal__nav"
             onClick={() => setViewMonth(addMonths(viewMonth, 1))}
-            disabled={isSameMonth(viewMonth, today)}
-            style={{ opacity: isSameMonth(viewMonth, today) ? 0.3 : 1 }}
+            disabled={isViewingCurrentMonth}
+            style={{ opacity: isViewingCurrentMonth ? 0.3 : 1 }}
           >
             &rarr;
           </button>
@@ -69,7 +77,7 @@ export function CalendarPicker({ selected, onSelect, onClose }: Props) {
             {week.map((day) => {
               const inMonth = isSameMonth(day, viewMonth)
               const sel = isSameDay(day, selectedDate)
-              const isToday = isSameDay(day, today)
+              const isDayToday = isSameDay(day, today)
               const future = isAfter(day, today)
               const dateStr = format(day, 'yyyy-MM-dd')
 
@@ -79,7 +87,7 @@ export function CalendarPicker({ selected, onSelect, onClose }: Props) {
                   className={
                     'cal__day' +
                     (sel ? ' cal__day--sel' : '') +
-                    (isToday && !sel ? ' cal__day--today' : '') +
+                    (isDayToday && !sel ? ' cal__day--today' : '') +
                     (!inMonth || future ? ' cal__day--muted' : '')
                   }
                   disabled={future}
@@ -95,9 +103,24 @@ export function CalendarPicker({ selected, onSelect, onClose }: Props) {
           </div>
         ))}
 
-        <button className="btn btn--ghost btn--full" style={{ marginTop: '0.6rem', fontSize: '0.82rem' }} onClick={onClose}>
-          Close
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem' }}>
+          {!isSelectedToday && (
+            <button
+              className="btn btn--primary"
+              style={{ flex: 1, fontSize: '0.82rem' }}
+              onClick={jumpToToday}
+            >
+              Today
+            </button>
+          )}
+          <button
+            className="btn btn--ghost"
+            style={{ flex: 1, fontSize: '0.82rem' }}
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   )

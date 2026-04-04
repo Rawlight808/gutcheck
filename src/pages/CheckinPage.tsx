@@ -32,7 +32,7 @@ function RatingRow({ label, value, onChange, labels }: {
     <div style={{ marginBottom: '1rem' }}>
       <div className="card__label">{label}</div>
       {labels && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--clr-text-muted)', marginBottom: '0.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--clr-text-muted)', marginBottom: '0.3rem', padding: '0 0.25rem' }}>
           <span>{labels[0]}</span>
           <span>{labels[1]}</span>
         </div>
@@ -107,7 +107,9 @@ export function CheckinPage() {
     })
   }, [selectedDate, period])
 
-  const canSave = metrics.length > 0 && metrics.every((metric) => metric.value > 0 && metric.label.trim())
+  const answered = metrics.filter((m) => m.value > 0).length
+  const total = metrics.length
+  const canSave = total > 0 && metrics.every((metric) => metric.value > 0 && metric.label.trim())
 
   const updateMetric = (id: string, patch: Partial<EditableMetric>) => {
     setMetrics((current) => current.map((metric) => (
@@ -195,7 +197,21 @@ export function CheckinPage() {
   }
 
   if (!loaded) {
-    return <p style={{ textAlign: 'center', color: 'var(--clr-text-muted)', padding: '2rem' }}>Loading...</p>
+    return (
+      <div style={{ padding: '2rem' }}>
+        <div className="skeleton skeleton-line" style={{ width: '50%', marginBottom: '1.5rem' }} />
+        {[1, 2, 3].map((i) => (
+          <div key={i} style={{ marginBottom: '1.25rem' }}>
+            <div className="skeleton skeleton-line--short skeleton-line" />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {[1, 2, 3, 4, 5].map((j) => (
+                <div key={j} className="skeleton" style={{ width: 48, height: 48, borderRadius: '50%' }} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -210,6 +226,17 @@ export function CheckinPage() {
         onDateChange={changeCheckinDate}
         todayHint="Go back to any day to add or adjust this check-in."
       />
+
+      {total > 0 && (
+        <div className="progress-strip" style={{ marginBottom: '0.75rem' }}>
+          <div className="progress-strip__dots">
+            {metrics.map((m) => (
+              <div key={m.id} className={`progress-dot ${m.value > 0 ? 'progress-dot--done' : ''}`} />
+            ))}
+          </div>
+          <span>{answered === total ? 'All answered' : `${answered} of ${total}`}</span>
+        </div>
+      )}
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
@@ -295,7 +322,9 @@ export function CheckinPage() {
         )}
       </div>
 
-      <div style={{ marginTop: '1rem' }}>
+      <div style={{ height: '5rem' }} />
+
+      <div className="sticky-save">
         <button
           className="btn btn--primary btn--full"
           onClick={handleSave}
