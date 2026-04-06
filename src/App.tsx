@@ -23,6 +23,7 @@ export const useAuthContext = () => useContext(AuthContext)
 
 export default function App() {
   const { user, loading, signIn, signUp, signOut } = useAuth()
+  const isNativeApp = Capacitor.isNativePlatform()
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {
@@ -56,7 +57,7 @@ export default function App() {
   return (
     <AuthContext.Provider value={{ user, signOut }}>
       <BrowserRouter>
-        <div className="app">
+        <div className={`app ${isNativeApp ? 'app--native' : ''}`}>
           <div className="app__content">
             <Routes>
               <Route path="/" element={<TodayPage />} />

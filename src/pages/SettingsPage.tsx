@@ -28,9 +28,6 @@ function useNotificationStatus() {
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
 const isNativeApp = Capacitor.isNativePlatform()
-const isStandalone = ('standalone' in navigator && (navigator as Record<string, unknown>).standalone === true)
-  || window.matchMedia('(display-mode: standalone)').matches
-
 export function SettingsPage() {
   const { user, signOut } = useAuthContext()
   const [settings, setSettings] = useState(() => getReminderSettings())
@@ -87,23 +84,6 @@ export function SettingsPage() {
         <h1 className="page-title">Settings</h1>
         <p className="page-subtitle">Reminders & preferences</p>
       </div>
-
-      {isIOS && !isStandalone && (
-        <div className="card" style={{ background: 'var(--clr-accent-light)', borderColor: 'var(--clr-accent)' }}>
-          <div className="card__label" style={{ color: 'var(--clr-accent)' }}>Install ChewClue</div>
-          <p style={{ fontSize: '0.85rem', lineHeight: 1.5, color: 'var(--clr-text)' }}>
-            For the best experience, add ChewClue to your Home Screen:
-          </p>
-          <ol style={{ fontSize: '0.82rem', color: 'var(--clr-text)', paddingLeft: '1.2rem', marginTop: '0.4rem', lineHeight: 1.6 }}>
-            <li>Tap the <strong>Share</strong> button (square with arrow)</li>
-            <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
-            <li>Tap <strong>Add</strong></li>
-          </ol>
-          <p style={{ fontSize: '0.78rem', color: 'var(--clr-text-muted)', marginTop: '0.5rem' }}>
-            This makes ChewClue open full-screen like a real app.
-          </p>
-        </div>
-      )}
 
       <div className="card">
         <div className="card__label">Daily Reminders</div>
