@@ -1,18 +1,33 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { getReminderSettings, saveReminderSettings, resetLocalAppData } from '../store'
 import { clearCustomTags } from '../customTags'
 import { resetCheckinMetricTemplate } from '../checkinCategories'
 import { cloudResetAllData } from '../cloudStore'
 import { useAuthContext } from '../App'
+import {
+  getReminderPermissionStatus,
+  refreshReminderScheduling,
+  requestReminderPermission,
+  type ReminderPermission,
+} from '../reminders'
 
 function useNotificationStatus() {
-  const [status, setStatus] = useState<NotificationPermission | 'unsupported'>(
-    'Notification' in window ? Notification.permission : 'unsupported',
-  )
-  return { status, refresh: () => setStatus('Notification' in window ? Notification.permission : 'unsupported') }
+  const [status, setStatus] = useState<ReminderPermission>('default')
+
+  const refresh = async () => {
+    setStatus(await getReminderPermissionStatus())
+  }
+
+  useEffect(() => {
+    refresh().catch(() => setStatus('unsupported'))
+  }, [])
+
+  return { status, refresh }
 }
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+const isNativeApp = Capacitor.isNativePlatform()
 const isStandalone = ('standalone' in navigator && (navigator as Record<string, unknown>).standalone === true)
   || window.matchMedia('(display-mode: standalone)').matches
 
@@ -27,17 +42,19 @@ export function SettingsPage() {
     const next = { ...settings, ...patch }
     setSettings(next)
     saveReminderSettings(next)
+    refreshReminderScheduling().catch(() => {})
   }
 
   const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) {
-      alert('This browser does not support notifications.')
-      return
-    }
-    const result = await Notification.requestPermission()
-    refreshNotif()
+    const result = await requestReminderPermission()
+    await refreshNotif()
     if (result === 'granted') {
-      new Notification('ChewClue', { body: 'Reminders are now enabled!' })
+      await refreshReminderScheduling().catch(() => {})
+      if ('Notification' in window) {
+        new Notification('ChewClue', { body: 'Reminders are now enabled!' })
+      }
+    } else if (result === 'unsupported') {
+      alert('This device does not support notifications.')
     }
   }
 
@@ -102,7 +119,9 @@ export function SettingsPage() {
             </p>
             <p style={{ fontSize: '0.78rem', color: 'var(--clr-text-muted)' }}>
               {isIOS
-                ? 'Open iPhone Settings → Safari → Notifications to re-enable.'
+                ? isNativeApp
+                  ? 'Open iPhone Settings → Notifications → ChewClue to re-enable.'
+                  : 'Open iPhone Settings → Safari → Notifications to re-enable.'
                 : 'Check your browser notification settings to re-enable.'}
             </p>
           </div>

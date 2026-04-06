@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
+import { Capacitor } from '@capacitor/core'
 import { useAuth } from './hooks/useAuth'
 import { BottomNav } from './components/BottomNav'
 import { AuthPage } from './pages/AuthPage'
@@ -9,7 +10,7 @@ import { LogFoodPage } from './pages/LogFoodPage'
 import { CheckinPage } from './pages/CheckinPage'
 import { InsightsPage } from './pages/InsightsPage'
 import { SettingsPage } from './pages/SettingsPage'
-import { startReminderScheduler } from './reminders'
+import { refreshReminderScheduling, startReminderScheduler } from './reminders'
 import './App.css'
 
 type AuthCtx = {
@@ -24,10 +25,20 @@ export default function App() {
   const { user, loading, signIn, signUp, signOut } = useAuth()
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if (!Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
     }
     startReminderScheduler()
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshReminderScheduling().catch(() => {})
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [])
 
   if (loading) {

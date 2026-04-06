@@ -4,6 +4,7 @@ import { format, isValid, parseISO } from 'date-fns'
 import { DateHeaderWithCalendar } from '../components/DateHeaderWithCalendar'
 import { v4 as uuid } from 'uuid'
 import { cloudGetCheckinForDate, cloudSaveCheckin } from '../cloudStore'
+import { refreshReminderScheduling } from '../reminders'
 import {
   createCustomCheckinMetricId,
   getCheckinMetricDisplay,
@@ -182,6 +183,9 @@ export function CheckinPage() {
       extraMetrics,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
     })
+    if (selectedDate === today) {
+      await refreshReminderScheduling().catch(() => {})
+    }
     setSaving(false)
     navigate(selectedDate === today ? '/' : `/?date=${selectedDate}`)
   }
