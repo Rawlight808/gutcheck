@@ -163,11 +163,11 @@ export async function cloudResetAllData(): Promise<void> {
     supabase
       .from('food_entries')
       .delete()
-      .neq('id', ''),
+      .not('id', 'is', null),
     supabase
       .from('daily_checkins')
       .delete()
-      .neq('id', ''),
+      .not('id', 'is', null),
   ])
 
   if (foodError) throw foodError
