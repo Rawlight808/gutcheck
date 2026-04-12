@@ -110,7 +110,7 @@ export function CheckinPage() {
 
   const answered = metrics.filter((m) => m.value > 0).length
   const total = metrics.length
-  const canSave = total > 0 && metrics.every((metric) => metric.value > 0 && metric.label.trim())
+  const canSave = total > 0 && metrics.every((metric) => metric.label.trim())
 
   const updateMetric = (id: string, patch: Partial<EditableMetric>) => {
     setMetrics((current) => current.map((metric) => (
@@ -238,7 +238,7 @@ export function CheckinPage() {
               <div key={m.id} className={`progress-dot ${m.value > 0 ? 'progress-dot--done' : ''}`} />
             ))}
           </div>
-          <span>{answered === total ? 'All answered' : `${answered} of ${total}`}</span>
+          <span>{answered === total ? 'All answered' : `${answered} of ${total} — you can save anytime`}</span>
         </div>
       )}
 

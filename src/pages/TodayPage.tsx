@@ -148,22 +148,32 @@ export function TodayPage() {
 
                 {checkin ? (
                   <>
-                    <p className="checkin-summary__headline">
-                      {section.period === 'morning' ? 'Morning check-in complete' : 'Evening check-in complete'}
-                    </p>
-                    <div className="checkin-summary">
-                      {metrics.map((metric) => (
-                        <div key={metric.id} className="checkin-stat">
-                          <span className="checkin-stat__label">{metric.label}</span>
-                          <div
-                            className="checkin-stat__value"
-                            style={{ background: ratingColor(metric.value, metric.direction === 'higher_worse') }}
-                          >
-                            {metric.value}
+                    {(() => {
+                      const answeredMetrics = metrics.filter((m) => m.value > 0)
+                      const isPartial = answeredMetrics.length < metrics.length
+                      return (
+                        <>
+                          <p className="checkin-summary__headline">
+                            {isPartial
+                              ? `${section.period === 'morning' ? 'Morning' : 'Evening'} check-in — ${answeredMetrics.length} of ${metrics.length} logged`
+                              : section.period === 'morning' ? 'Morning check-in complete' : 'Evening check-in complete'}
+                          </p>
+                          <div className="checkin-summary">
+                            {answeredMetrics.map((metric) => (
+                              <div key={metric.id} className="checkin-stat">
+                                <span className="checkin-stat__label">{metric.label}</span>
+                                <div
+                                  className="checkin-stat__value"
+                                  style={{ background: ratingColor(metric.value, metric.direction === 'higher_worse') }}
+                                >
+                                  {metric.value}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        </>
+                      )
+                    })()}
                   </>
                 ) : (
                   <button className="btn btn--ghost btn--full" onClick={() => navigate(`/checkin?date=${date}&period=${section.period}`)}>

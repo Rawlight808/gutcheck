@@ -59,6 +59,8 @@ export function detectTriggers(
         const prevTags = foodsByDate.get(prevDay)
         const val = checkin[symptom]
 
+        if (val === 0) continue
+
         if (prevTags?.has(tag.id)) {
           withTag.push(val)
         } else {

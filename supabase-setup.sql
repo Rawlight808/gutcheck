@@ -20,11 +20,11 @@ create table daily_checkins (
   user_id uuid references auth.users(id) on delete cascade not null default auth.uid(),
   date date not null,
   period text not null default 'morning' check (period in ('morning', 'evening')),
-  sleep_quality smallint not null check (sleep_quality between 1 and 5),
-  energy smallint not null check (energy between 1 and 5),
-  mood smallint not null check (mood between 1 and 5),
-  pain smallint not null check (pain between 1 and 5),
-  bowel smallint not null check (bowel between 1 and 5),
+  sleep_quality smallint not null default 0 check (sleep_quality between 0 and 5),
+  energy smallint not null default 0 check (energy between 0 and 5),
+  mood smallint not null default 0 check (mood between 0 and 5),
+  pain smallint not null default 0 check (pain between 0 and 5),
+  bowel smallint not null default 0 check (bowel between 0 and 5),
   notes text not null default '',
   custom_labels jsonb not null default '{}'::jsonb,
   custom_directions jsonb not null default '{}'::jsonb,
@@ -48,6 +48,23 @@ create index daily_checkins_user_date on daily_checkins (user_id, date, period);
 -- alter table daily_checkins add column if not exists custom_labels jsonb not null default '{}'::jsonb;
 -- alter table daily_checkins add column if not exists custom_directions jsonb not null default '{}'::jsonb;
 -- alter table daily_checkins add column if not exists extra_metrics jsonb not null default '[]'::jsonb;
+
+-- Allow partial check-ins (0 = unanswered):
+-- alter table daily_checkins drop constraint if exists daily_checkins_sleep_quality_check;
+-- alter table daily_checkins add constraint daily_checkins_sleep_quality_check check (sleep_quality between 0 and 5);
+-- alter table daily_checkins drop constraint if exists daily_checkins_energy_check;
+-- alter table daily_checkins add constraint daily_checkins_energy_check check (energy between 0 and 5);
+-- alter table daily_checkins drop constraint if exists daily_checkins_mood_check;
+-- alter table daily_checkins add constraint daily_checkins_mood_check check (mood between 0 and 5);
+-- alter table daily_checkins drop constraint if exists daily_checkins_pain_check;
+-- alter table daily_checkins add constraint daily_checkins_pain_check check (pain between 0 and 5);
+-- alter table daily_checkins drop constraint if exists daily_checkins_bowel_check;
+-- alter table daily_checkins add constraint daily_checkins_bowel_check check (bowel between 0 and 5);
+-- alter table daily_checkins alter column sleep_quality set default 0;
+-- alter table daily_checkins alter column energy set default 0;
+-- alter table daily_checkins alter column mood set default 0;
+-- alter table daily_checkins alter column pain set default 0;
+-- alter table daily_checkins alter column bowel set default 0;
 
 -- Row Level Security: each user only sees their own data
 alter table food_entries enable row level security;
