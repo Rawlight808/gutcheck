@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-const supportSrc = `${import.meta.env.BASE.replace(/\/?$/, '/')}support.html`
+const supportSrc = `${(import.meta.env.BASE_URL ?? '/').replace(/\/?$/, '/')}support.html`
 
 export function SupportPage() {
   return (

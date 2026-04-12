@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-const policySrc = `${import.meta.env.BASE.replace(/\/?$/, '/') }privacy.html`
+const policySrc = `${(import.meta.env.BASE_URL ?? '/').replace(/\/?$/, '/')}privacy.html`
 
 export function PrivacyPage() {
   return (
