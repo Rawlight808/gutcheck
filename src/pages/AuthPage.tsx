@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { SignUpResult } from '../hooks/useAuth'
 
 type Props = {
@@ -84,6 +85,10 @@ export function AuthPage({ onSignIn, onSignUp }: Props) {
         >
           {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
         </button>
+
+        <p className="auth-legal">
+          <Link to="/privacy">Privacy Policy</Link>
+        </p>
       </div>
     </div>
   )

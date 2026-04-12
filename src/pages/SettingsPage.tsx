@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'
 import { getReminderSettings, saveReminderSettings, resetLocalAppData } from '../store'
 import { clearCustomTags } from '../customTags'
@@ -173,6 +174,22 @@ export function SettingsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card">
+        <div className="card__label">Help</div>
+        <p style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', marginBottom: '0.35rem' }}>
+          Support:{' '}
+          <a href="mailto:rawlightlabs@gmail.com" style={{ color: 'var(--clr-accent)' }}>
+            rawlightlabs@gmail.com
+          </a>
+        </p>
+        <Link
+          to="/privacy"
+          style={{ fontSize: '0.88rem', color: 'var(--clr-accent)', textDecoration: 'none', fontWeight: 600 }}
+        >
+          Privacy Policy
+        </Link>
       </div>
 
       <div className="card">

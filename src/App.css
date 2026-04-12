@@ -630,6 +630,46 @@ input, textarea, select {
   cursor: pointer;
 }
 
+.auth-legal {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.78rem;
+}
+
+.auth-legal a {
+  color: var(--clr-text-muted);
+}
+
+/* ── Privacy (embedded policy) ─────────────────────── */
+.privacy-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--clr-bg, #f8f6f2);
+}
+
+.privacy-page__header {
+  flex-shrink: 0;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--clr-border, rgba(0, 0, 0, 0.08));
+  background: var(--clr-surface, #fff);
+}
+
+.privacy-page__back {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--clr-accent);
+  text-decoration: none;
+}
+
+.privacy-page__frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  min-height: 0;
+  background: #fff;
+}
+
 /* ── Calendar picker ──────────────────────────────── */
 .cal-overlay {
   position: fixed;

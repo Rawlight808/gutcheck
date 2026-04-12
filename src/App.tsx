@@ -10,6 +10,7 @@ import { LogFoodPage } from './pages/LogFoodPage'
 import { CheckinPage } from './pages/CheckinPage'
 import { InsightsPage } from './pages/InsightsPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { PrivacyPage } from './pages/PrivacyPage'
 import { refreshReminderScheduling, startReminderScheduler } from './reminders'
 import './App.css'
 
@@ -42,35 +43,43 @@ export default function App() {
     }
   }, [])
 
-  if (loading) {
-    return (
-      <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
-        <p style={{ color: 'var(--clr-text-muted)' }}>Loading...</p>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return <AuthPage onSignIn={signIn} onSignUp={signUp} />
-  }
+  const loadingScreen = (
+    <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
+      <p style={{ color: 'var(--clr-text-muted)' }}>Loading...</p>
+    </div>
+  )
 
   return (
-    <AuthContext.Provider value={{ user, signOut }}>
-      <BrowserRouter>
-        <div className={`app ${isNativeApp ? 'app--native' : ''}`}>
-          <div className="app__content">
-            <Routes>
-              <Route path="/" element={<TodayPage />} />
-              <Route path="/log" element={<LogFoodPage />} />
-              <Route path="/checkin" element={<CheckinPage />} />
-              <Route path="/insights" element={<InsightsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </div>
-          <BottomNav />
-        </div>
-      </BrowserRouter>
-    </AuthContext.Provider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route
+          path="*"
+          element={
+            loading ? (
+              loadingScreen
+            ) : user ? (
+              <AuthContext.Provider value={{ user, signOut }}>
+                <div className={`app ${isNativeApp ? 'app--native' : ''}`}>
+                  <div className="app__content">
+                    <Routes>
+                      <Route path="/" element={<TodayPage />} />
+                      <Route path="/log" element={<LogFoodPage />} />
+                      <Route path="/checkin" element={<CheckinPage />} />
+                      <Route path="/insights" element={<InsightsPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </div>
+                  <BottomNav />
+                </div>
+              </AuthContext.Provider>
+            ) : (
+              <AuthPage onSignIn={signIn} onSignUp={signUp} />
+            )
+          }
+        />
+      </Routes>
+    </BrowserRouter>
   )
 }
