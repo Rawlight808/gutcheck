@@ -49,4 +49,7 @@ android/key.properties
 
 # Local App Store screenshot output (remove this line to commit PNGs)
 screenshots/app-store/*.png
-.env.production
+
+# NOTE: .env.production is intentionally committed. It holds only the Supabase
+# URL and anon key, which are public by design (shipped in the client bundle
+# and protected by Row-Level Security). CI needs it to build the live site.
