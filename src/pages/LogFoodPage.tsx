@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format, subDays, isValid, parseISO } from 'date-fns'
 import { DateHeaderWithCalendar } from '../components/DateHeaderWithCalendar'
 import { v4 as uuid } from 'uuid'
-import { cloudSaveFoodEntry, cloudGetFoodEntry, cloudGetFoodEntriesForDate, cloudDeleteFoodEntry } from '../cloudStore'
+import { saveFoodEntry, getFoodEntry, getFoodEntriesForDate, deleteFoodEntry } from '../dataStore'
+import { getTagEmoji } from '../tagCatalog'
 import { BUILT_IN_TAGS } from '../types'
 import { getCustomTags, addCustomTag, removeCustomTag } from '../customTags'
 import { getAutoTags } from '../autoTags'
@@ -29,14 +30,6 @@ const MEALS: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'dinner', label: 'Dinner', emoji: '🌙' },
   { slot: 'supplement', label: 'Supplement', emoji: '💊' },
 ]
-
-const TAG_ICON: Record<string, string> = {
-  dairy: '🧀',
-  gluten: '🍞',
-  sugar: '🍬',
-  spicy: '🌶️',
-  caffeine: '☕',
-}
 
 function resolveDate(param: string | null): string {
   if (param && isValid(parseISO(param))) return param
@@ -82,14 +75,14 @@ export function LogFoodPage() {
 
   const refreshDateEntries = useCallback(async () => {
     setLoadingDateEntries(true)
-    setDateEntries(await cloudGetFoodEntriesForDate(selectedDate))
+    setDateEntries(await getFoodEntriesForDate(selectedDate))
     setLoadingDateEntries(false)
   }, [selectedDate])
 
   const loadEntry = useCallback(async () => {
     if (!editId) return
     setLoadingEntry(true)
-    const entry = await cloudGetFoodEntry(editId)
+    const entry = await getFoodEntry(editId)
     if (entry) {
       setEntryId(entry.id)
       setSelectedDate(entry.date)
@@ -203,7 +196,7 @@ export function LogFoodPage() {
     if (!description.trim() || saving) return
     setSaving(true)
 
-    await cloudSaveFoodEntry({
+    const result = await saveFoodEntry({
       id: entryId,
       date: selectedDate,
       meal,
@@ -224,7 +217,7 @@ export function LogFoodPage() {
     }
 
     const savedMealLabel = MEALS.find((m) => m.slot === meal)?.label ?? 'Entry'
-    toast.show(`${savedMealLabel} saved`)
+    toast.show(result === 'synced' ? `${savedMealLabel} saved` : `${savedMealLabel} saved offline — will sync`, result === 'synced' ? 2000 : 3200)
     setDescription('')
     setTags(new Set([...tags].filter((tagId) => tagId.startsWith('custom_'))))
     setAutoApplied(false)
@@ -239,7 +232,7 @@ export function LogFoodPage() {
   }
 
   const handleDeleteEntry = async (id: string) => {
-    await cloudDeleteFoodEntry(id)
+    await deleteFoodEntry(id)
 
     if (id === entryId) {
       navigate(selectedDate === todayStr ? '/log' : `/log?date=${selectedDate}`)
@@ -286,7 +279,7 @@ export function LogFoodPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
                   <span className="meal-item__tags">
                     {entry.tags.slice(0, 3).map((tag) => (
-                      <span key={tag} title={tag}>{TAG_ICON[tag] ?? '🏷️'}</span>
+                      <span key={tag} title={tag}>{getTagEmoji(tag)}</span>
                     ))}
                   </span>
                   <button className="meal-item__edit" onClick={() => navigate(`/log?date=${selectedDate}&edit=${entry.id}`)}>✎</button>

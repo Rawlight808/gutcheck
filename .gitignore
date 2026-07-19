@@ -49,3 +49,4 @@ android/key.properties
 
 # Local App Store screenshot output (remove this line to commit PNGs)
 screenshots/app-store/*.png
+.env.production

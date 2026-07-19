@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { format } from 'date-fns'
-import { cloudGetCheckinForDate } from './cloudStore'
+import { getCheckinForDate } from './dataStore'
 import { getReminderSettings } from './store'
 
 const LAST_EVENING_KEY = 'chewclue_last_evening_reminder'
@@ -88,8 +88,8 @@ async function syncNativeReminderNotifications() {
   let hasEveningCheckinToday = false
   try {
     const [morning, evening] = await Promise.all([
-      cloudGetCheckinForDate(today, 'morning'),
-      cloudGetCheckinForDate(today, 'evening'),
+      getCheckinForDate(today, 'morning'),
+      getCheckinForDate(today, 'evening'),
     ])
     hasMorningCheckinToday = Boolean(morning)
     hasEveningCheckinToday = Boolean(evening)
@@ -197,7 +197,7 @@ async function runReminderCheck() {
     now >= settings.eveningReminderTime &&
     !alreadySentToday(LAST_EVENING_KEY)
   ) {
-    const checkin = await cloudGetCheckinForDate(today, 'evening')
+    const checkin = await getCheckinForDate(today, 'evening')
     if (!checkin) {
       notify('ChewClue', 'How are you feeling tonight? Tap to do your evening check-in.')
     }
@@ -210,7 +210,7 @@ async function runReminderCheck() {
     now < '12:00' &&
     !alreadySentToday(LAST_MORNING_KEY)
   ) {
-    const checkin = await cloudGetCheckinForDate(today, 'morning')
+    const checkin = await getCheckinForDate(today, 'morning')
     if (!checkin) {
       notify('ChewClue', 'Good morning! How are you feeling? Tap to do your check-in.')
     }

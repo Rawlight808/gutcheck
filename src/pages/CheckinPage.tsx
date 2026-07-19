@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format, isValid, parseISO } from 'date-fns'
 import { DateHeaderWithCalendar } from '../components/DateHeaderWithCalendar'
 import { v4 as uuid } from 'uuid'
-import { cloudGetCheckinForDate, cloudSaveCheckin } from '../cloudStore'
+import { getCheckinForDate, saveCheckin } from '../dataStore'
 import { refreshReminderScheduling } from '../reminders'
 import {
   createCustomCheckinMetricId,
@@ -118,7 +118,7 @@ export function CheckinPage() {
 
   useEffect(() => {
     setLoaded(false)
-    cloudGetCheckinForDate(selectedDate, period).then((c) => {
+    getCheckinForDate(selectedDate, period).then((c) => {
       if (c) {
         setExisting(c)
         setMetrics(buildEditableMetrics(period, c))
@@ -204,7 +204,7 @@ export function CheckinPage() {
     )
     saveCheckinMetricTemplate([...preservedMetrics, ...templateFromMetrics])
 
-    await cloudSaveCheckin({
+    await saveCheckin({
       id: existing?.id ?? uuid(),
       date: selectedDate,
       period,

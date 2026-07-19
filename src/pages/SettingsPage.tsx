@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'
-import { getReminderSettings, saveReminderSettings, resetLocalAppData } from '../store'
-import { clearCustomTags } from '../customTags'
-import { resetCheckinMetricTemplate } from '../checkinCategories'
-import { cloudResetAllData } from '../cloudStore'
+import { getReminderSettings, saveReminderSettings } from '../store'
+import { resetAllData, subscribeSyncStatus, type SyncStatus } from '../dataStore'
 import { useAuthContext } from '../App'
 import {
   getReminderPermissionStatus,
@@ -35,6 +33,9 @@ export function SettingsPage() {
   const [resetting, setResetting] = useState(false)
   const [resetNotice, setResetNotice] = useState<string | null>(null)
   const { status: notifStatus, refresh: refreshNotif } = useNotificationStatus()
+  const [sync, setSync] = useState<SyncStatus>({ pending: 0, offline: false })
+
+  useEffect(() => subscribeSyncStatus(setSync), [])
 
   const update = (patch: Partial<typeof settings>) => {
     const next = { ...settings, ...patch }
@@ -65,10 +66,7 @@ export function SettingsPage() {
     setResetting(true)
     setResetNotice(null)
     try {
-      await cloudResetAllData()
-      resetLocalAppData()
-      clearCustomTags()
-      resetCheckinMetricTemplate()
+      await resetAllData()
       const defaults = getReminderSettings()
       setSettings(defaults)
       setResetNotice('All data reset. You can start fresh now.')
@@ -90,9 +88,16 @@ export function SettingsPage() {
         <div className="card__label">Daily Reminders</div>
 
         {notifStatus === 'granted' ? (
-          <p style={{ fontSize: '0.82rem', color: 'var(--clr-green)', fontWeight: 600, marginBottom: '0.75rem' }}>
-            Notifications enabled
-          </p>
+          <div style={{ marginBottom: '0.75rem' }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--clr-green)', fontWeight: 600, marginBottom: isNativeApp ? 0 : '0.25rem' }}>
+              Notifications enabled
+            </p>
+            {!isNativeApp && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', margin: 0 }}>
+                Web reminders only fire while ChewClue is open in your browser. For reliable reminders, use the iOS or Android app.
+              </p>
+            )}
+          </div>
         ) : notifStatus === 'denied' ? (
           <div style={{ marginBottom: '0.75rem' }}>
             <p style={{ fontSize: '0.82rem', color: 'var(--clr-red)', marginBottom: '0.25rem' }}>
@@ -174,6 +179,17 @@ export function SettingsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card">
+        <div className="card__label">Sync</div>
+        <p style={{ fontSize: '0.85rem', margin: 0, color: sync.pending > 0 ? 'var(--clr-orange)' : 'var(--clr-text-muted)' }}>
+          {sync.pending > 0
+            ? `${sync.pending} change${sync.pending === 1 ? '' : 's'} waiting to sync${sync.offline ? ' — will retry when you\'re back online' : '...'}`
+            : sync.offline
+              ? 'Offline — showing locally saved data'
+              : 'All changes synced'}
+        </p>
       </div>
 
       <div className="card">

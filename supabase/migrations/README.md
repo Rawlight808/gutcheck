@@ -24,6 +24,7 @@ applied won't hurt.
 | `001_checkin_periods_and_custom_metrics.sql` | Adds `period` (morning/evening) and the jsonb columns for custom labels, directions, and extra metrics |
 | `002_partial_checkins.sql` | Allows ratings of 0 so a check-in can be saved with some categories unanswered |
 | `003_snack_to_supplement.sql` | Renames the `snack` meal slot to `supplement` |
+| `004_user_prefs.sql` | Adds the `user_prefs` table so custom tags, learned meals, check-in templates, and reminder settings sync across devices |
 
 ## Not sure what's already applied?
 

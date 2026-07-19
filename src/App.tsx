@@ -13,6 +13,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { SupportPage } from './pages/SupportPage'
 import { refreshReminderScheduling, startReminderScheduler } from './reminders'
+import { flushQueue, initDataStore } from './dataStore'
 import './App.css'
 
 type AuthCtx = {
@@ -36,13 +37,23 @@ export default function App() {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         refreshReminderScheduling().catch(() => {})
+        flushQueue().catch(() => {})
       }
     }
+    const handleOnline = () => {
+      flushQueue().catch(() => {})
+    }
     document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('online', handleOnline)
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('online', handleOnline)
     }
   }, [])
+
+  useEffect(() => {
+    if (user) initDataStore(user.id).catch(() => {})
+  }, [user])
 
   const loadingScreen = (
     <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>

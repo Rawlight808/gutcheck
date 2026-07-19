@@ -70,3 +70,25 @@ create policy "Users can update own checkins"
 
 create policy "Users can delete own checkins"
   on daily_checkins for delete using (auth.uid() = user_id);
+
+-- Per-user preferences blob (custom tags, learned meals, check-in template,
+-- reminder settings). Synced by the app with last-write-wins by updated_at.
+create table user_prefs (
+  user_id uuid primary key references auth.users(id) on delete cascade default auth.uid(),
+  prefs jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+alter table user_prefs enable row level security;
+
+create policy "Users can view own prefs"
+  on user_prefs for select using (auth.uid() = user_id);
+
+create policy "Users can insert own prefs"
+  on user_prefs for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own prefs"
+  on user_prefs for update using (auth.uid() = user_id);
+
+create policy "Users can delete own prefs"
+  on user_prefs for delete using (auth.uid() = user_id);

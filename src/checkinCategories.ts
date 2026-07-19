@@ -4,6 +4,7 @@ import type {
   CheckinMetricTemplate,
   DailyCheckin,
 } from './types'
+import { notifyPrefsChanged } from './prefsEvents'
 
 const STORAGE_KEY = 'chewclue_checkin_metric_template'
 
@@ -96,6 +97,12 @@ export function getCheckinMetricTemplate(): CheckinMetricTemplate[] {
 }
 
 export function saveCheckinMetricTemplate(metrics: CheckinMetricTemplate[]): void {
+  applyCheckinMetricTemplate(metrics)
+  notifyPrefsChanged()
+}
+
+/** Write template without triggering a prefs push (cloud → local apply). */
+export function applyCheckinMetricTemplate(metrics: CheckinMetricTemplate[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeTemplate(metrics)))
   } catch {
@@ -109,6 +116,7 @@ export function resetCheckinMetricTemplate(): void {
   } catch {
     /* storage unavailable */
   }
+  notifyPrefsChanged()
 }
 
 export function createCustomCheckinMetricId(label: string, existingIds: string[]): string {

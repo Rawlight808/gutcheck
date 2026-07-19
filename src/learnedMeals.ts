@@ -3,6 +3,8 @@
 // happens on save; matching is on the normalized description (case/spacing
 // insensitive). Stored locally, same as custom tags.
 
+import { notifyPrefsChanged } from './prefsEvents'
+
 const STORAGE_KEY = 'chewclue_learned_meals'
 
 export type LearnedMeal = {
@@ -54,12 +56,14 @@ export function learnMeal(description: string, tags: string[]): void {
     if (map[key]) {
       delete map[key]
       writeMap(map)
+      notifyPrefsChanged()
     }
     return
   }
 
   map[key] = { name: key, tags: uniqueTags, updatedAt: new Date().toISOString() }
   writeMap(map)
+  notifyPrefsChanged()
 }
 
 /** Tags previously learned for an exact (normalized) description match. */
@@ -75,5 +79,16 @@ export function forgetMeal(description: string): void {
   if (map[key]) {
     delete map[key]
     writeMap(map)
+    notifyPrefsChanged()
   }
+}
+
+/** Full map for cloud prefs sync. */
+export function exportLearnedMealMap(): Record<string, LearnedMeal> {
+  return readMap()
+}
+
+/** Replace the map from cloud prefs (does not trigger a push). */
+export function importLearnedMealMap(map: Record<string, LearnedMeal>): void {
+  writeMap(map && typeof map === 'object' ? map : {})
 }

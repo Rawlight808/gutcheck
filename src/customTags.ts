@@ -1,4 +1,5 @@
 import type { TagDef } from './types'
+import { notifyPrefsChanged } from './prefsEvents'
 
 const STORAGE_KEY = 'chewclue_custom_tags'
 
@@ -59,14 +60,17 @@ export function addCustomTag(label: string): TagDef {
   const newTag = buildCustomTag(label)
   const tags = dedupeTags([...getCustomTags(), newTag])
   saveCustomTags(tags)
+  notifyPrefsChanged()
   return tags.find((tag) => tag.id === newTag.id) ?? newTag
 }
 
 export function removeCustomTag(id: string): void {
   const tags = getCustomTags().filter((t) => t.id !== id)
   saveCustomTags(tags)
+  notifyPrefsChanged()
 }
 
 export function clearCustomTags(): void {
   saveCustomTags([])
+  notifyPrefsChanged()
 }

@@ -1,4 +1,5 @@
 import type { CheckinPeriod, DailyCheckin, FoodEntry, ReminderSettings } from './types'
+import { notifyPrefsChanged } from './prefsEvents'
 
 const FOOD_KEY = 'chewclue_foods'
 const CHECKIN_KEY = 'chewclue_checkins'
@@ -49,6 +50,16 @@ export function deleteFoodEntry(id: string) {
   write(FOOD_KEY, getFoodEntries().filter((e) => e.id !== id))
 }
 
+/** Replace the entire cached food list (used by the sync layer). */
+export function replaceFoodEntries(entries: FoodEntry[]) {
+  write(FOOD_KEY, entries)
+}
+
+/** Replace the entire cached check-in list (used by the sync layer). */
+export function replaceCheckins(checkins: DailyCheckin[]) {
+  write(CHECKIN_KEY, checkins)
+}
+
 export function getCheckins(): DailyCheckin[] {
   return read<DailyCheckin[]>(CHECKIN_KEY, []).map((checkin) => ({
     ...checkin,
@@ -95,6 +106,12 @@ export function getReminderSettings(): ReminderSettings {
 }
 
 export function saveReminderSettings(settings: ReminderSettings) {
+  write(REMINDER_KEY, settings)
+  notifyPrefsChanged()
+}
+
+/** Write reminder settings without triggering a prefs push (cloud → local apply). */
+export function applyReminderSettings(settings: ReminderSettings) {
   write(REMINDER_KEY, settings)
 }
 

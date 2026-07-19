@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { cloudGetFoodEntries, cloudGetCheckins } from '../cloudStore'
+import { format, subDays } from 'date-fns'
+import { getAllFoodEntries, getAllCheckins } from '../dataStore'
 import { detectTriggers } from '../insights'
 import type { TriggerInsight } from '../types'
 
@@ -17,7 +18,10 @@ export function InsightsPage() {
   const [dataStats, setDataStats] = useState({ foodDays: 0, checkinDays: 0 })
 
   useEffect(() => {
-    Promise.all([cloudGetFoodEntries(), cloudGetCheckins()]).then(([foods, checkins]) => {
+    // detectTriggers only looks at a 60-day window, so don't fetch a lifetime
+    // of rows — 75 days covers the window plus the next-morning lag.
+    const since = format(subDays(new Date(), 75), 'yyyy-MM-dd')
+    Promise.all([getAllFoodEntries(since), getAllCheckins(since)]).then(([foods, checkins]) => {
       setInsights(detectTriggers(foods, checkins))
       const foodDays = new Set(foods.map((f) => f.date)).size
       const checkinDays = new Set(checkins.map((c) => c.date)).size

@@ -1,7 +1,15 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { cloudGetFoodEntriesForDate, cloudGetCheckinsForDate, cloudDeleteFoodEntry } from '../cloudStore'
+import {
+  getFoodEntriesForDate,
+  getCheckinsForDate,
+  deleteFoodEntry,
+  saveFoodEntry,
+  subscribeSyncStatus,
+  type SyncStatus,
+} from '../dataStore'
+import { getTagEmoji } from '../tagCatalog'
 import type { CheckinPeriod, FoodEntry, DailyCheckin, MealSlot } from '../types'
 import { getCheckinMetricDisplay } from '../checkinCategories'
 import { DateHeaderWithCalendar } from '../components/DateHeaderWithCalendar'
@@ -49,6 +57,9 @@ export function TodayPage() {
 
   const [undoItem, setUndoItem] = useState<FoodEntry | null>(null)
   const undoTimer = useRef<number>(0)
+  const [sync, setSync] = useState<SyncStatus>({ pending: 0, offline: false })
+
+  useEffect(() => subscribeSyncStatus(setSync), [])
 
   const updateDate = (nextDate: string) => {
     setDate(nextDate)
@@ -58,8 +69,8 @@ export function TodayPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     const [f, c] = await Promise.all([
-      cloudGetFoodEntriesForDate(date),
-      cloudGetCheckinsForDate(date),
+      getFoodEntriesForDate(date),
+      getCheckinsForDate(date),
     ])
     setFoods(f)
     setCheckins(c)
@@ -71,18 +82,19 @@ export function TodayPage() {
   const getCheckin = (period: CheckinPeriod) => checkins.find((checkin) => checkin.period === period)
 
   const handleDelete = (item: FoodEntry) => {
+    // Delete immediately (a deferred delete is lost if the app closes);
+    // Undo simply re-saves the held entry.
     setFoods((prev) => prev.filter((f) => f.id !== item.id))
+    deleteFoodEntry(item.id)
     setUndoItem(item)
     clearTimeout(undoTimer.current)
-    undoTimer.current = window.setTimeout(() => {
-      cloudDeleteFoodEntry(item.id)
-      setUndoItem(null)
-    }, 4000)
+    undoTimer.current = window.setTimeout(() => setUndoItem(null), 6000)
   }
 
   const handleUndo = () => {
     if (!undoItem) return
     clearTimeout(undoTimer.current)
+    saveFoodEntry(undoItem)
     setFoods((prev) => [...prev, undoItem])
     setUndoItem(null)
   }
@@ -103,6 +115,18 @@ export function TodayPage() {
           todayHint="Track meals, find triggers, feel better."
         />
       </div>
+
+      {(sync.offline || sync.pending > 0) && (
+        <div className="card" style={{ marginBottom: '0.75rem', padding: '0.6rem 0.9rem', borderColor: 'var(--clr-orange)' }}>
+          <p style={{ fontSize: '0.78rem', color: 'var(--clr-orange)', fontWeight: 600, margin: 0 }}>
+            {sync.offline
+              ? sync.pending > 0
+                ? `Offline — ${sync.pending} change${sync.pending === 1 ? '' : 's'} will sync when you're back online`
+                : 'Offline — showing saved data'
+              : `Syncing ${sync.pending} change${sync.pending === 1 ? '' : 's'}...`}
+          </p>
+        </div>
+      )}
 
       {loading ? (
         <>
@@ -212,7 +236,7 @@ export function TodayPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem' }}>
                               <span className="meal-item__tags">
                                 {item.tags.slice(0, 3).map((t) => (
-                                  <span key={t} title={t}>{t === 'dairy' ? '🧀' : t === 'gluten' ? '🍞' : t === 'sugar' ? '🍬' : t === 'spicy' ? '🌶️' : t === 'caffeine' ? '☕' : '·'}</span>
+                                  <span key={t} title={t}>{getTagEmoji(t)}</span>
                                 ))}
                               </span>
                               <button className="meal-item__edit" onClick={() => navigate(`/log?date=${date}&edit=${item.id}`)}>✎</button>
